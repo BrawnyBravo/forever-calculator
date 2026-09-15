@@ -506,12 +506,8 @@ function renderBeta(){
 }
 $("#copyBeta").onclick=()=>{const log=loadLog();copyText(loadPlan().map(c=>c.title+"\n"+[...COMMON,...c.extra].map((t,ti)=>{const e=log[c.title+"|"+ti]||{};return `- ${t}: ${e.s||"Not started"}${e.n?" — "+e.n:""}`}).join("\n")).join("\n\n")||"No beta plan yet","Beta notes copied")};
 
-/* ---------- Shortlist, checks, sources ---------- */
-function renderShortlist(){
-  if(!DATA.shortlist)return;
-  const rows=[...DATA.shortlist].sort((a,b)=>a.priority-b.priority);
-  $("#shortlist").innerHTML=`<table><thead><tr><th>Test order</th><th>Candidate</th><th>Race</th><th>Role</th><th class="num">PvE</th><th class="num">PvP</th><th class="num">Flex</th><th class="num">Personal fit</th><th class="num">Uncertainty</th><th>What to prove in beta</th></tr></thead><tbody>${rows.map(r=>`<tr><td class="num">${esc(r.priority)}</td><td style="font-weight:700;color:${TEXT_COLOR[CLASSES.find(c=>r.cand.includes(c))||(r.cand.includes("Druid")?"Druid":"Warrior")]}">${esc(r.cand)}</td><td>${esc(r.race)}</td><td>${esc(r.role)}</td>${["pve","pvp","flex","personal","uncert"].map(k=>`<td class="num">${esc(r[k])}</td>`).join("")}<td>${esc(r.hyp)}<div class="muted">${esc(r.evidence)}</div></td></tr>`).join("")}</tbody></table>`;
-}
+/* ---------- Checks and sources ---------- */
+
 function renderChecks(){
   $("#checks").innerHTML=DATA.checks.map(c=>`<div class="check tip"><div class="sev ${c.kind}">${{stale:"Out of date",flaw:"Known limit",note:"Worth knowing",fresh:"Fixed"}[c.kind]}</div><div><h3>${esc(c.title)}</h3><p>${esc(c.body)}</p></div></div>`).join("");
 }
@@ -523,11 +519,11 @@ function renderAll(){
   renderChoices();renderFind();
   const t=state.tab;
   if(t==="grid")renderGrid(); if(t==="compare")renderCompare(); if(t==="races")renderRaces(); if(t==="classes")renderClasses();
-  if(t==="legacy")renderLegacy(); if(t==="beta")renderBeta(); if(t==="shortlist")renderShortlist(); if(t==="checks")renderChecks(); if(t==="sources")renderSources();
+  if(t==="legacy")renderLegacy(); if(t==="beta")renderBeta();  if(t==="checks")renderChecks(); if(t==="sources")renderSources();
   $("#cmpCount").textContent=state.cmp.length?`(${state.cmp.length})`:"";
 }
 $("#dataDate").textContent=DATA.asOf;
 readHash();
-if(state.tab==="shortlist"&&!DATA.shortlist)state.tab="find";showTab(document.querySelector(`nav.tabs button[data-tab="${state.tab}"]`)?state.tab:"find");renderAll();
+showTab(document.querySelector(`nav.tabs button[data-tab="${state.tab}"]`)?state.tab:"find");renderAll();
 </script>
 </html>
