@@ -204,7 +204,6 @@ details.char summary::-webkit-details-marker{display:none}
   <button role="tab" data-tab="races">Races</button>
   <button role="tab" data-tab="classes">Classes</button>
   <button role="tab" data-tab="planner">Planner</button>
-  <button role="tab" data-tab="legacy">Legacy</button>
   <button role="tab" data-tab="beta">Beta log</button>
   
   <button role="tab" data-tab="checks">How it scores</button>
@@ -251,11 +250,6 @@ details.char summary::-webkit-details-marker{display:none}
   <div id="classBody" class="view"></div>
 </section>
 
-<section class="view" data-view="legacy" hidden>
-  <div><h2>Legacy points</h2><p class="lede">65 points can be earned across the account at launch; 16 can be spent on each character (Blizzard). Values are Wowhead's launch-era reporting. This planner assumes one point per rank, which is not yet confirmed. The same picker sits inside the talents and gear planner, where a perk with a stat effect changes the stats and damage estimate as you add points.</p></div>
-  <div class="pool tip"><div><div class="label">Spent on this character</div><div class="num" style="font-size:22px"><span id="spent">0</span> / 16</div></div><div class="pips" id="pips"></div><button class="btn small" id="legacyReset">Clear</button></div>
-  <div class="cards" id="legacy"></div>
-</section>
 
 <section class="view" data-view="beta" hidden>
   <div><h2>Beta log</h2><p class="lede">Run the same tests on every character you try, so the results compare. Add characters with “Add to beta plan” on any result. Notes save in this browser only; use “Copy all notes” to keep them somewhere safe.</p></div>
@@ -347,7 +341,7 @@ function readHash(){
   for(const k in SHORT){const v=h.get(SHORT[k]);if(v&&OPTS[k].v.includes(v))state.I[k]=v}
   if(h.get("cmp"))state.cmp=h.get("cmp").split("~").filter(n=>DATA.paths.some(p=>p.name===n)).slice(0,3);
   if(h.get("lg"))h.get("lg").split("~").forEach(x=>{const [i,n]=x.split(".");if(DATA.legacy[+i])state.legacy[+i]=+n});
-  if(h.get("t"))state.tab=h.get("t");
+  if(h.get("t"))state.tab=h.get("t")==="legacy"?"planner":h.get("t");
   if(h.get("pl")){const [pi,spec,tal,gear,raid,pvp,ver,opt]=h.get("pl").split("|");const p=DATA.paths[+pi];if(p){state.pl={path:p.name,spec,tStr:tal||"",gearStr:gear||"",raid:raid==="1",pvp:pvp==="1",ver:ver||"",opt:opt||"",t:null,gear:{}}}}
 }
 function writeHash(){
@@ -505,19 +499,7 @@ function renderClasses(){
     <div class="cards">${[...DATA.gearNotes,...DATA.profNotes].map(n=>`<article class="card tip"><div class="label">${esc(n.k)}</div><p style="margin:0">${esc(n.v)}</p></article>`).join("")}</div>`;
 }
 
-/* ---------- Legacy ---------- */
-const maxRank=l=>{const m=/\d+\/(\d+)/.exec(l.Ranks);return m?+m[1]:0};
-function renderLegacy(){
-  const spent=Object.values(state.legacy).reduce((a,b)=>a+b,0);
-  $("#spent").textContent=spent;
-  $("#pips").innerHTML=Array.from({length:16},(_,i)=>`<i class="${i<spent?"on":""}"></i>`).join("");
-  const branches=[...new Set(DATA.legacy.map(l=>l.Branch))];
-  $("#legacy").innerHTML=branches.map(b=>`<article class="card tip" style="padding:10px 4px"><h3 style="padding:4px 14px">${esc(b)}</h3>${DATA.legacy.map((l,i)=>l.Branch!==b?"":`
-    <div class="perk"><div><div style="font-weight:700">${esc(l.Perk)}</div><div style="font-size:14px">${esc(l["Per-rank or activation effect"])}</div>${l["Restrictions / trigger"]?`<div class="muted" style="font-size:13px">${esc(l["Restrictions / trigger"])}</div>`:""}</div>
-    ${maxRank(l)?`<div class="stepper"><button aria-label="Remove a rank of ${esc(l.Perk)}" data-l="${i}" data-d="-1" ${!(state.legacy[i]>0)?"disabled":""}>−</button><span class="num">${state.legacy[i]||0}/${maxRank(l)}</span><button aria-label="Add a rank of ${esc(l.Perk)}" data-l="${i}" data-d="1" ${(state.legacy[i]||0)>=maxRank(l)||spent>=16?"disabled":""}>+</button></div>`:`<span class="muted" style="font-size:13px">Ranks pending</span>`}</div>`).join("")}</article>`).join("");
-  $("#legacy").querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>{const i=+b.dataset.l;state.legacy[i]=Math.max(0,(state.legacy[i]||0)+ +b.dataset.d);writeHash();renderLegacy()});
-}
-$("#legacyReset").onclick=()=>{state.legacy={};writeHash();renderLegacy()};
+/* ---------- Legacy: the picker lives inside the planner (planner.js, plLegacyHTML); state.legacy and the lg= link key are unchanged ---------- */
 
 /* ---------- Beta log (this browser only) ---------- */
 const COMMON=["Exact racial tooltips","Talent tree, ranks and costs","First professions and camp buffs","Early solo pace (kills per minute, downtime)","First dungeon for your faction (Ruins of Lordaeron or Hall of Thanes)"];
@@ -565,7 +547,7 @@ function renderAll(){
   renderChoices();renderFind();
   const t=state.tab;
   if(t==="grid")renderGrid(); if(t==="compare")renderCompare(); if(t==="races")renderRaces(); if(t==="classes")renderClasses();
-  if(t==="legacy")renderLegacy(); if(t==="beta")renderBeta();  if(t==="checks")renderChecks(); if(t==="sources")renderSources(); if(t==="planner")renderPlanner();
+  if(t==="beta")renderBeta();  if(t==="checks")renderChecks(); if(t==="sources")renderSources(); if(t==="planner")renderPlanner();
   $("#cmpCount").textContent=state.cmp.length?`(${state.cmp.length})`:"";
 }
 /* ---------- Planner: talents and gear for one path (15 Sep 2026) ----------
@@ -575,7 +557,7 @@ const PL_SLOTS=[["Head",1],["Neck",2],["Shoulder",3],["Back",4],["Chest",5],["Wr
 const PL_CLASS_ID={Druid:1,Hunter:2,Mage:3,Paladin:4,Priest:5,Rogue:6,Shaman:7,Warlock:8,Warrior:9};
 const PL_QCOLOR={2:"#1eff00",3:"#0070dd",4:"#a335ee",5:"#ff8000"};
 const PL_ARMOR_SLOTS=new Set([1,3,5,6,7,8,9,10]);
-let PL=null, plLoading=false, plWaiting=[];
+let PL=null, plLoading=false, plWaiting=[], plOpening=false;
 state.plPick=null; state.plQ="";
 
 function ensurePlanner(cb){
@@ -732,7 +714,11 @@ function plStats(p){
 }
 /* --- render --- */
 function renderPlanner(){
-  const el=$("#planner"); if(!state.pl){el.innerHTML=`<div class="empty tip">Pick a path on “Find your main” and press <b>Plan talents &amp; gear</b>. The planner opens with the expected best talents and a starter gear set for that spec, and you can change anything.</div>`;return}
+  const el=$("#planner");
+  if(!state.pl){ // nothing planned yet: open the top-ranked path for the current choices, so the tab always shows a build
+    const top=(rankAll(DATA.paths,state.I)[0]||{}).p;
+    if(top&&!plOpening){plOpening=true;plOpen(top.name);plOpening=false;return}
+    el.innerHTML=`<div class="empty tip">Pick a path on “Find your main” and press <b>Plan talents &amp; gear</b>.</div>`;return}
   if(!PL){ensurePlanner(renderPlanner);return}
   if(!state.pl.t)plRestore();
   const p=DATA.paths.find(x=>x.name===state.pl.path), spec=state.pl.spec, sp=PL.specs[spec], trees=PL.trees[p.cls], sorted=plSorted(p.cls), total=plTotal();
@@ -772,8 +758,8 @@ function renderPlanner(){
   $("#plPvp").onchange=e=>{state.pl.pvp=e.target.checked;writeHash();renderPlanner()};
   $("#plLink").onclick=()=>copyText(location.href,"Link copied");
   ["buffs","cons","deb"].forEach(k=>{const c=$("#plOpt-"+k); if(c)c.onchange=e=>{state.pl[k]=e.target.checked;writeHash();renderPlanner()}});
-  el.querySelectorAll("[data-lg]").forEach(b=>b.onclick=()=>{const i=+b.dataset.lg;state.legacy[i]=Math.max(0,(state.legacy[i]||0)+ +b.dataset.d);writeHash();renderPlanner();renderLegacy()});
-  const lr=$("#plLegacyReset"); if(lr)lr.onclick=()=>{state.legacy={};writeHash();renderPlanner();renderLegacy()};
+  el.querySelectorAll("[data-lg]").forEach(b=>b.onclick=()=>{const i=+b.dataset.lg;state.legacy[i]=Math.max(0,(state.legacy[i]||0)+ +b.dataset.d);writeHash();renderPlanner()});
+  const lr=$("#plLegacyReset"); if(lr)lr.onclick=()=>{state.legacy={};writeHash();renderPlanner()};
   el.querySelectorAll(".tal").forEach(c=>{const ti=+c.dataset.ti,i=+c.dataset.i;
     c.onclick=e=>{const d=e.target.closest("[data-d]"); if(d){plChange(p.cls,ti,i,+d.dataset.d);return} plChange(p.cls,ti,i,1)};
     c.oncontextmenu=e=>{e.preventDefault();plChange(p.cls,ti,i,-1)}});
