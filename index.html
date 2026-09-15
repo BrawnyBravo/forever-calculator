@@ -152,6 +152,39 @@ details.char summary::-webkit-details-marker{display:none}
 .sev.stale{color:var(--t-orange)} .sev.flaw{color:#ff6b5e} .sev.note{color:var(--t-blue)} .sev.fresh{color:var(--uncommon)}
 .check p{margin:4px 0 0;color:var(--ink-2);max-width:78ch}
 .foot-note{margin-top:40px;padding-top:14px;border-top:1px solid var(--frame);font-size:13px;color:var(--ink-3)}
+.pl-head{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;padding:12px 14px}
+.pl-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:14px;margin-top:14px}
+@media (max-width:900px){.pl-grid{grid-template-columns:1fr}}
+.pl-points{margin:0 0 8px;font-size:15px}
+.pl-talents{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:960px){.pl-talents{grid-template-columns:1fr}}
+.tree{padding:10px}
+.tree h3{margin:0 0 8px}
+.tgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.tal{border:1px solid var(--frame);border-radius:4px;padding:5px 2px 4px;text-align:center;font-size:11px;line-height:1.15;cursor:pointer;background:#0f1424;display:flex;flex-direction:column;align-items:center;gap:3px}
+.tal img{width:38px;height:38px;border-radius:4px;display:block;border:1px solid #333}
+.tal .tn{min-height:2.3em;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.tal .tp{display:flex;align-items:center;gap:3px;font-size:11px} .tal .tp button{width:20px;height:20px;line-height:1;padding:0;border:1px solid var(--frame-hi);background:#151c2e;border-radius:3px;cursor:pointer} .tal .tp button:disabled{opacity:.3;cursor:default}
+.tal:hover:not(.locked){border-color:var(--frame-hi)}
+.tal.maxed{border-color:var(--gold-soft)} .tal.maxed img{border-color:var(--gold)}
+.tal.part{border-color:#2f8cff}
+.tal.locked{opacity:.45}
+.tal{position:relative} .tal .fx{position:absolute;top:2px;right:2px;font-family:var(--mono);font-size:10px;line-height:1;padding:2px 4px;border-radius:3px;background:var(--gold);color:#000;font-weight:700} b.fx{font-family:var(--mono);font-size:11px;padding:1px 4px;border-radius:3px;background:var(--gold);color:#000}
+.pl-forever{padding:10px 14px} .pl-forever ul{margin:2px 0 10px;padding-left:18px;font-size:14px} .pl-forever li{margin:3px 0} .pl-forever .label{margin-top:6px}
+.src{font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:1px 5px;border-radius:3px;border:1px solid var(--frame-hi);color:var(--ink-2);vertical-align:1px} .src-blizzard{color:var(--uncommon);border-color:var(--uncommon)} .src-press{color:var(--t-blue);border-color:var(--t-blue)} .src-fan{color:var(--t-orange);border-color:var(--t-orange)}
+.tn{line-height:1.15;min-height:2.3em}
+.tp{display:flex;justify-content:center;gap:4px;align-items:center;margin-top:4px}
+.tp button{width:20px;height:20px;padding:0;line-height:1;border:1px solid var(--frame-hi);background:#151c2e;border-radius:3px;cursor:pointer}
+.tp button:disabled{opacity:.3;cursor:default}
+.pl-side{display:grid;gap:12px;align-content:start}
+.pl-stats,.pl-gear{padding:10px 14px}
+.pl-statgrid{display:grid;grid-template-columns:auto auto auto auto;gap:4px 14px;font-size:14px}
+@media (max-width:560px){.pl-statgrid{grid-template-columns:auto auto}}
+.slot{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--frame)}
+.slot img{border-radius:3px}
+.picker{padding:10px;margin:0 0 8px}
+.picker input{width:100%;box-sizing:border-box;padding:6px 8px;background:#0f1424;border:1px solid var(--frame-hi);color:inherit;border-radius:3px;margin-bottom:8px}
+.pick{display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--frame)}
 .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--panel-2);border:1px solid var(--gold-soft);color:var(--gold);padding:8px 14px;border-radius:3px;font-size:14px}
 @media (prefers-reduced-motion:no-preference){.row,.chip,.btn{transition:border-color .12s,color .12s}}
 </style>
@@ -167,6 +200,7 @@ details.char summary::-webkit-details-marker{display:none}
   <button role="tab" data-tab="compare">Compare <span id="cmpCount" class="num"></span></button>
   <button role="tab" data-tab="races">Races</button>
   <button role="tab" data-tab="classes">Classes</button>
+  <button role="tab" data-tab="planner">Planner</button>
   <button role="tab" data-tab="legacy">Legacy</button>
   <button role="tab" data-tab="beta">Beta log</button>
   
@@ -194,6 +228,10 @@ details.char summary::-webkit-details-marker{display:none}
   <div class="gridwrap tip"><table class="matrix" id="matrix"></table></div>
 </section>
 
+<section class="view" data-view="planner" hidden>
+  <div><h2>Talents &amp; gear planner</h2><p class="lede">Open a path from “Find your main”. The planner starts from the expected best talents and a starter gear set for the spec, then you change anything. Choices save in the link.</p></div>
+  <div id="planner"></div>
+</section>
 <section class="view" data-view="compare" hidden>
   <div><h2>Side by side</h2><p class="lede">Add up to three paths with "Compare" on any result. Green marks the best value in each row.</p></div>
   <div id="cmp"></div>
@@ -307,11 +345,13 @@ function readHash(){
   if(h.get("cmp"))state.cmp=h.get("cmp").split("~").filter(n=>DATA.paths.some(p=>p.name===n)).slice(0,3);
   if(h.get("lg"))h.get("lg").split("~").forEach(x=>{const [i,n]=x.split(".");if(DATA.legacy[+i])state.legacy[+i]=+n});
   if(h.get("t"))state.tab=h.get("t");
+  if(h.get("pl")){const [pi,spec,tal,gear,raid,pvp]=h.get("pl").split("|");const p=DATA.paths[+pi];if(p){state.pl={path:p.name,spec,tStr:tal||"",gearStr:gear||"",raid:raid==="1",pvp:pvp==="1",t:null,gear:{}}}}
 }
 function writeHash(){
   const h=new URLSearchParams();
   for(const k in SHORT)if(state.I[k]!==DEFAULTS[k])h.set(SHORT[k],state.I[k]);
   if(state.cmp.length)h.set("cmp",state.cmp.join("~"));
+  if(state.pl&&state.pl.t)h.set("pl",[DATA.paths.findIndex(p=>p.name===state.pl.path),state.pl.spec,plTalentString(state.pl.t),PL_SLOTS.map(([n])=>state.pl.gear[n]||"").join(","),state.pl.raid?1:0,state.pl.pvp?1:0].join("|"));
   const lg=Object.entries(state.legacy).filter(([,n])=>n>0).map(([i,n])=>i+"."+n).join("~");if(lg)h.set("lg",lg);
   if(state.tab!=="find")h.set("t",state.tab);
   history.replaceState(null,"","#"+h.toString());
@@ -368,7 +408,7 @@ function detailHTML(p,I){
       <div class="fact"><div class="label">What's new for ${esc(p.cls)}</div><p>${esc(cg?cg["Forever check"]:"")}</p></div>
     </div>
     <div class="warnline">${esc(p.evidence)}</div>
-    <div class="chips"><button class="btn small" data-cmp="${esc(p.name)}">${inCmp?"Remove from compare":"Compare"}</button><button class="btn small" data-plan="${esc(p.name)}">${loadPlan().some(c=>c.path===p.name)?"In beta plan ✓":"Add to beta plan"}</button>${isSky(p)?`<span class="muted" style="font-size:14px;align-self:center">Skyborne needs the Heroic Pack ($29.99) or higher.</span>`:""}</div>
+    <div class="chips"><button class="btn small" data-planner="${esc(p.name)}">Plan talents &amp; gear</button><button class="btn small" data-cmp="${esc(p.name)}">${inCmp?"Remove from compare":"Compare"}</button><button class="btn small" data-plan="${esc(p.name)}">${loadPlan().some(c=>c.path===p.name)?"In beta plan ✓":"Add to beta plan"}</button>${isSky(p)?`<span class="muted" style="font-size:14px;align-self:center">Skyborne needs the Heroic Pack ($29.99) or higher.</span>`:""}</div>
   </div>`;
 }
 function renderFind(){
@@ -382,12 +422,13 @@ function renderFind(){
       <div class="rank">${i+1}</div>
       <div><div class="pname" style="color:${TEXT_COLOR[p.cls]}">${esc(displayName(p))}</div>
         <div class="meta"><span class="fac-${p.faction}">${p.faction}</span><span>${(sp=>sp?`<b>${esc(sp)}</b> for ${esc(I.role)}`:esc(p.roles))(specFor(p,I))}</span>${isNew(p)?`<span class="badge new">New combo</span>`:""}${isSky(p)?`<span class="badge pack">Pack race</span>`:""}</div>
-        <div class="meta muted">${esc(whyItFits(p,I).join(" · "))}</div></div>
+        <div class="meta muted">${esc(whyItFits(p,I).join(" · "))} <button class="btn small" data-planner="${esc(p.name)}">Plan talents &amp; gear</button></div></div>
       <div class="fit"><div class="bar"><i style="width:${s.score}%;background:${tierColor(s.score)}"></i></div><div class="score" style="color:${tierColor(s.score)}">${s.score}</div></div>
     </div>${open?detailHTML(p,I):""}`}).join("");
   $("#list").querySelectorAll(".row").forEach(r=>{const go=()=>{state.open=state.open===r.dataset.name?null:r.dataset.name;renderFind()};r.onclick=go;r.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}}});
   $("#list").querySelectorAll("[data-cmp]").forEach(b=>b.onclick=e=>{e.stopPropagation();toggleCmp(b.dataset.cmp);renderFind()});
   $("#list").querySelectorAll("[data-plan]").forEach(b=>b.onclick=e=>{e.stopPropagation();addToPlan(b.dataset.plan);renderFind()});
+  $("#list").querySelectorAll("[data-planner]").forEach(b=>b.onclick=e=>{e.stopPropagation();plOpen(b.dataset.planner)});
 }
 $("#toggleAll").onclick=()=>{state.all=!state.all;renderFind()};
 function toggleCmp(n){
@@ -521,11 +562,211 @@ function renderAll(){
   renderChoices();renderFind();
   const t=state.tab;
   if(t==="grid")renderGrid(); if(t==="compare")renderCompare(); if(t==="races")renderRaces(); if(t==="classes")renderClasses();
-  if(t==="legacy")renderLegacy(); if(t==="beta")renderBeta();  if(t==="checks")renderChecks(); if(t==="sources")renderSources();
+  if(t==="legacy")renderLegacy(); if(t==="beta")renderBeta();  if(t==="checks")renderChecks(); if(t==="sources")renderSources(); if(t==="planner")renderPlanner();
   $("#cmpCount").textContent=state.cmp.length?`(${state.cmp.length})`:"";
 }
+/* ---------- Planner: talents and gear for one path (15 Sep 2026) ----------
+   Data comes from planner-data.js (built by make_planner_data.py from WoWSims Classic, MIT). Classic-era trees and items
+   stand in until Forever beta data exists. Loaded only when the planner opens, so the main page stays light. */
+const PL_SLOTS=[["Head",1],["Neck",2],["Shoulder",3],["Back",4],["Chest",5],["Wrist",6],["Hands",7],["Waist",8],["Legs",9],["Feet",10],["Ring 1",11],["Ring 2",11],["Trinket 1",12],["Trinket 2",12],["Main hand","mh"],["Off hand","oh"],["Ranged","rng"]];
+const PL_CLASS_ID={Druid:1,Hunter:2,Mage:3,Paladin:4,Priest:5,Rogue:6,Shaman:7,Warlock:8,Warrior:9};
+const PL_QCOLOR={2:"#1eff00",3:"#0070dd",4:"#a335ee",5:"#ff8000"};
+const PL_ARMOR_SLOTS=new Set([1,3,5,6,7,8,9,10]);
+let PL=null, plLoading=false, plWaiting=[];
+state.plPick=null; state.plQ="";
+
+function ensurePlanner(cb){
+  if(window.PLANNER){PL=window.PLANNER;cb();return}
+  plWaiting.push(cb); if(plLoading)return; plLoading=true;
+  const s=document.createElement("script"); s.src="planner-data.js";
+  s.onload=()=>{PL=window.PLANNER;plLoading=false;const q=plWaiting;plWaiting=[];q.forEach(f=>f())};
+  s.onerror=()=>{plLoading=false;$("#planner").innerHTML=`<div class="empty tip">The planner data file (planner-data.js) is missing next to this page. Keep the two files together.</div>`};
+  document.head.appendChild(s);
+  if(!window.whTooltips){window.whTooltips={colorLinks:false,iconizeLinks:false,renameLinks:false};const w=document.createElement("script");w.src="https://wow.zamimg.com/js/tooltips.js";document.head.appendChild(w)}
+}
+const plSorted=(cls)=>PL.trees[cls].map(t=>[...t.talents].sort((a,b)=>a.r-b.r||a.c-b.c));
+function plSpecKey(cls,name){ if(PL.specs[name]&&PL.specs[name].cls===cls)return name; const k=`${name} (${cls})`; if(PL.specs[k])return k; return Object.keys(PL.specs).find(x=>PL.specs[x].cls===cls) }
+function plDefaultSpec(p,I){
+  const sp=specFor(p,I); if(sp)return sp;
+  const s=DATA.specs.find(x=>x.Class===p.cls); const role=p.roles.split(", ").find(r=>s&&s[r]);
+  return role?s[role][I.goal==="Pure PvP"?"PvP":"PvE"]:null;
+}
+function plParseTalents(cls,str){
+  const trees=plSorted(cls); const parts=(str||"").split("-");
+  return trees.map((tl,ti)=>tl.map((t,i)=>Math.min(t.max,+((parts[ti]||"")[i]||0))));
+}
+const plTalentString=(pts)=>pts.map(tl=>tl.join("").replace(/0+$/,"")).join("-").replace(/-+$/,"");
+function plOpen(pathName,specName){
+  const p=DATA.paths.find(x=>x.name===pathName); if(!p)return;
+  state.tab="planner"; showTab("planner"); window.scrollTo({top:0});
+  $("#planner").innerHTML=`<div class="empty tip">Loading talent trees and items…</div>`;
+  ensurePlanner(()=>{
+    const spec=plSpecKey(p.cls,specName||plDefaultSpec(p,state.I)||"");
+    if(!state.pl||state.pl.path!==pathName||state.pl.spec!==spec){
+      state.pl={path:pathName,spec,t:plParseTalents(p.cls,PL.specs[spec].talents),gear:{},raid:false,pvp:false};
+      plAutofill();
+    }
+    state.plPick=null; writeHash(); renderPlanner();
+  });
+}
+/* --- talent rules: 51 points, rows unlock at 5 points per row in that tree, prerequisite must be maxed --- */
+const plTotal=()=>state.pl.t.reduce((s,tl)=>s+tl.reduce((a,b)=>a+b,0),0);
+function plTreeOk(cls,ti){
+  const tl=plSorted(cls)[ti], pts=state.pl.t[ti];
+  return tl.every((t,i)=>{ if(!pts[i])return true;
+    const below=tl.reduce((s,x,j)=>s+(x.r<t.r?pts[j]:0),0); if(below<5*t.r)return false;
+    if(t.pre){const j=tl.findIndex(x=>x.r===t.pre[0]&&x.c===t.pre[1]); if(j>=0&&pts[j]<tl[j].max)return false}
+    return true });
+}
+function plCanAdd(cls,ti,i){
+  const tl=plSorted(cls)[ti], t=tl[i], pts=state.pl.t[ti];
+  if(plTotal()>=51||pts[i]>=t.max)return false;
+  const below=tl.reduce((s,x,j)=>s+(x.r<t.r?pts[j]:0),0); if(below<5*t.r)return false;
+  if(t.pre){const j=tl.findIndex(x=>x.r===t.pre[0]&&x.c===t.pre[1]); if(j>=0&&pts[j]<tl[j].max)return false}
+  return true;
+}
+function plChange(cls,ti,i,d){
+  const pts=state.pl.t[ti];
+  if(d>0){ if(!plCanAdd(cls,ti,i))return } else { if(!pts[i])return; pts[i]--; if(!plTreeOk(cls,ti)){pts[i]++;toast("Other talents depend on that point");return} writeHash();renderPlanner();return }
+  pts[i]++; writeHash(); renderPlanner();
+}
+/* --- gear --- */
+const plItem=id=>PL.items.find(x=>x.id===id);
+const plDps=it=>it.d?(it.d[0]+it.d[1])/2/it.d[2]:0;
+function plAllowed(it,p){
+  const pr=PL.prof[p.cls];
+  if(it.c&&!it.c.includes(PL_CLASS_ID[p.cls]))return false;
+  if(it.f&&((it.f===1&&p.faction!=="Alliance")||(it.f===2&&p.faction!=="Horde")))return false;
+  if(PL_ARMOR_SLOTS.has(it.t)&&it.a&&it.a>pr.armor)return false;
+  return true;
+}
+function plCandidates(slotKey,p,spec){
+  const pr=PL.prof[p.cls], sp=PL.specs[spec];
+  return PL.items.filter(it=>{
+    if(!plAllowed(it,p))return false; if(it.raid&&!state.pl.raid)return false; if(it.pvp&&!state.pl.pvp)return false;
+    if(slotKey==="mh")return it.t===13&&((it.h===1||it.h===2)&&pr.w.includes(it.w)||(it.h===4&&pr.two.includes(it.w)));
+    if(slotKey==="oh")return it.t===13&&(((it.h===2||it.h===3)&&sp.dw&&pr.w.includes(it.w))||(it.w===7&&pr.sh)||(it.w===5&&pr.oh));
+    if(slotKey==="rng")return it.t===14&&pr.rng.includes(it.r);
+    return it.t===slotKey;
+  });
+}
+function plScore(it,slotKey,spec){
+  const sp=PL.specs[spec]; let s=0; for(const k in it.s)s+=it.s[k]*(sp.w[k]||0);
+  const dw={mh:sp.mh||1,oh:sp.oh||0,rng:sp.rng||0}[slotKey]||0; if(it.d)s+=plDps(it)*dw;
+  return s;
+}
+function plAutofill(){
+  const p=DATA.paths.find(x=>x.name===state.pl.path), spec=state.pl.spec, g={};
+  const best=(key,skip=[])=>plCandidates(key,p,spec).filter(it=>!skip.includes(it.id)).sort((a,b)=>plScore(b,key,spec)-plScore(a,key,spec))[0];
+  for(const [name,key] of PL_SLOTS){
+    if(typeof key!=="number")continue;
+    const prev=Object.entries(g).filter(([n])=>PL_SLOTS.find(s=>s[0]===n)[1]===key).map(([,id])=>id);
+    const b=best(key,prev); if(b)g[name]=b.id;
+  }
+  const mhAll=plCandidates("mh",p,spec).sort((a,b)=>plScore(b,"mh",spec)-plScore(a,"mh",spec));
+  const two=mhAll.find(x=>x.h===4), one=mhAll.find(x=>x.h!==4), oh=best("oh");
+  const s2=two?plScore(two,"mh",spec):-1, s1=(one?plScore(one,"mh",spec):-1)+(oh?plScore(oh,"oh",spec):0);
+  if(two&&s2>=s1){g["Main hand"]=two.id}else{if(one)g["Main hand"]=one.id;if(oh)g["Off hand"]=oh.id}
+  const r=best("rng"); if(r)g["Ranged"]=r.id;
+  state.pl.gear=g;
+}
+function plStatLine(it){return Object.entries(it.s).map(([k,v])=>PL.stat[k].includes("%")?`${v}${PL.stat[k]}`:`+${v} ${PL.stat[k]}`).join(", ")+(it.d?` · ${it.d[0]}–${it.d[1]} (${plDps(it).toFixed(1)} dps, ${it.d[2]}s)`:"")}
+function plStats(p){
+  const b=PL.base.cls[p.cls], r=PL.base.race[p.race]||{}, g=Array(44).fill(0);
+  for(const id of Object.values(state.pl.gear)){const it=plItem(id); if(it)for(const k in it.s)g[+k]+=it.s[k]}
+  const str=b.str+(r.str||0)+g[0], agi=b.agi+(r.agi||0)+g[1], sta=b.sta+(r.sta||0)+g[2], int=b.int+(r.int||0)+g[3], spi=b.spi+(r.spi||0)+g[4];
+  const school=[[6,"Arcane"],[7,"Fire"],[8,"Frost"],[9,"Holy"],[10,"Nature"],[11,"Shadow"]].filter(([k])=>g[k]).map(([k,n])=>`+${g[k]} ${n}`).join(", ");
+  const rows=[["Health",b.hp+sta*10+g[34]],["Mana",b.mana?b.mana+int*15+g[23]:null],["Strength",str],["Agility",agi],["Stamina",sta],["Intellect",int],["Spirit",spi],
+    ["Attack power",b.ap+str*b.apStr+agi*b.apAgi+g[17]+g[43]],["Ranged attack power",b.rap!=null?b.rap+agi*(b.rapAgi||0)+g[27]+g[17]:null],
+    ["Crit %",(b.mcrit+agi*b.critAgi+g[19]).toFixed(2)],["Hit %",g[18]||null],["Spell power",g[5]+g[42]||null],["School power",school||null],["Healing",g[41]+g[5]||null],
+    ["Spell crit %",b.mana?(b.scrit+int*b.critInt+g[14]).toFixed(2):null],["Spell hit %",g[13]||null],["MP5",g[12]||null],["Armor",g[26]+g[40]+agi*2],
+    ["Defense",g[28]||null],["Dodge %",g[31]||null],["Parry %",g[32]||null],["Block %",g[29]||null],["Block value",g[30]||null],
+    ["Resistances",[[35,"Arc"],[36,"Fire"],[37,"Frost"],[38,"Nat"],[39,"Shad"]].filter(([k])=>g[k]).map(([k,n])=>`${g[k]} ${n}`).join(", ")||null]];
+  return rows.filter(([,v])=>v!==null&&v!=="");
+}
+/* --- render --- */
+function renderPlanner(){
+  const el=$("#planner"); if(!state.pl){el.innerHTML=`<div class="empty tip">Pick a path on “Find your main” and press <b>Plan talents &amp; gear</b>. The planner opens with the expected best talents and a starter gear set for that spec, and you can change anything.</div>`;return}
+  if(!PL){ensurePlanner(renderPlanner);return}
+  if(!state.pl.t)plRestore();
+  const p=DATA.paths.find(x=>x.name===state.pl.path), spec=state.pl.spec, sp=PL.specs[spec], trees=PL.trees[p.cls], sorted=plSorted(p.cls), total=plTotal();
+  const fv=PL.forever[p.cls]||{talents:{},new:[],notes:[]}, ftal=fv.talents||{};
+  const specs=Object.keys(PL.specs).filter(k=>PL.specs[k].cls===p.cls);
+  const icon=(ic,size="medium")=>`https://wow.zamimg.com/images/wow/icons/${size}/${ic}.jpg`;
+  el.innerHTML=`
+  <div class="pl-head tip">
+    <div><div class="label">Planning</div><h2 style="margin:0;color:${TEXT_COLOR[p.cls]}">${esc(displayName(p))}</h2><div class="muted">${esc(p.faction)} · ${esc(p.roles)}</div></div>
+    <div><div class="label">Spec</div><div class="chips">${specs.map(k=>`<button class="chip" data-spec="${esc(k)}" aria-pressed="${k===spec}">${esc(k.replace(/ \(.*\)$/,""))}</button>`).join("")}</div></div>
+    <div class="chips"><button class="btn small" id="plPreset" ${sp.talents?"":"disabled"}>Load suggested talents</button><button class="btn small" id="plClearT">Clear talents</button><button class="btn small" id="plAuto">Suggest starter gear</button><label class="muted" style="font-size:14px;align-self:center"><input type="checkbox" id="plRaid" ${state.pl.raid?"checked":""}> include raid-tier items</label><label class="muted" style="font-size:14px;align-self:center"><input type="checkbox" id="plPvp" ${state.pl.pvp?"checked":""}> include PvP rank rewards</label><button class="btn small" id="plLink">Copy link to this build</button></div>
+  </div>
+  <p class="muted" style="font-size:14px">${esc(PL.credit)} ${sp.talents?(sp.own?"The suggested talents are this page's Classic-era build for this spec (WoWSims has no usable preset for it).":"The suggested talents are the WoWSims Classic raid build for this spec."):"No suggested build for this spec yet; place the points yourself."} Starter gear is picked by this page's own stat weights from dungeon, quest, crafted, vendor and world items up to item level 65${state.pl.raid?", plus raid-tier items":""}${state.pl.pvp?", plus PvP rank rewards":""}. Hover any talent or item for its tooltip. Talents marked <b class="fx">F</b> have a reported Forever change; see the panel below the stats.</p>
+  <div class="pl-points"><span class="num">${total} / 51</span> points, <span class="num">${51-total}</span> left · ${trees.map((t,ti)=>`${esc(t.name)} <b class="num">${state.pl.t[ti].reduce((a,b)=>a+b,0)}</b>`).join(" · ")} <span class="muted">· click a talent to add a point, right-click or − to take one back</span></div>
+  <div class="pl-talents">
+      ${trees.map((t,ti)=>`<div class="tree tip"><h3>${esc(t.name)} <span class="num muted">${state.pl.t[ti].reduce((a,b)=>a+b,0)}</span></h3><div class="tgrid">${sorted[ti].map((x,i)=>{const pts=state.pl.t[ti][i], can=plCanAdd(p.cls,ti,i), st=pts>=x.max?"maxed":pts?"part":can?"avail":"locked";
+        const fx=ftal[x.n]; return `<div class="tal ${st}${fx?" has-fx":""}" style="grid-row:${x.r+1};grid-column:${x.c+1}" data-ti="${ti}" data-i="${i}" title="${esc(x.n)}${fx?" — Forever ("+esc(fx.src)+"): "+esc(fx.v):""}">${fx?`<b class="fx" aria-label="Forever change">F</b>`:""}<a href="https://www.wowhead.com/classic/spell=${x.sp[Math.max(0,Math.min(pts,x.max)-1)]}" data-wowhead="spell=${x.sp[Math.max(0,Math.min(pts,x.max)-1)]}&domain=classic" target="_blank" rel="noopener" tabindex="-1"><img src="${icon(x.ic,"medium")}" alt=""></a><div class="tn">${esc(x.n)}</div><div class="tp"><button aria-label="Remove a point from ${esc(x.n)}" data-d="-1" ${pts?"":"disabled"}>−</button><span class="num">${pts}/${x.max}</span><button aria-label="Add a point to ${esc(x.n)}" data-d="1" ${can?"":"disabled"}>+</button></div></div>`}).join("")}</div></div>`).join("")}
+  </div>
+  <div class="pl-grid">
+    <div class="pl-side">
+      <div class="tip pl-stats"><h3>Stats at level 60 with this gear</h3><div class="pl-statgrid">${plStats(p).map(([l,v])=>`<span>${esc(l)}</span><b class="num">${esc(v)}</b>`).join("")}</div><p class="muted" style="font-size:13px;margin:8px 0 0">Base numbers from Classic level 60; talents and buffs are not added in yet.</p></div>
+      ${plForeverHTML(p.cls,fv)}
+    </div>
+      <div class="tip pl-gear"><h3>Gear</h3>${PL_SLOTS.map(([name,key])=>{const id=state.pl.gear[name], it=id&&plItem(id), open=state.plPick===name;
+        return `<div class="slot"><img src="${it?icon(it.ic,"small"):"data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="}" alt="" width="28" height="28"><div><div class="label">${esc(name)}</div>${it?`<a href="https://www.wowhead.com/classic/item=${it.id}" data-wowhead="item=${it.id}&domain=classic" target="_blank" rel="noopener" style="color:${PL_QCOLOR[it.q]||"#fff"};font-weight:700">${esc(it.n)}</a> <span class="muted">ilvl ${it.il}</span><div class="muted" style="font-size:13px">${esc(plStatLine(it))}${it.src?` · ${esc(it.src)}`:""}</div>`:`<span class="muted">${name==="Off hand"&&(id2=>{const m=id2&&plItem(id2);return m&&m.h===4})(state.pl.gear["Main hand"])?"Two-handed weapon in use":"Empty"}</span>`}</div><div class="chips"><button class="btn small" data-pick="${esc(name)}">${open?"Close":"Change"}</button>${it?`<button class="btn small" data-clear="${esc(name)}">Clear</button>`:""}</div></div>
+        ${open?plPickerHTML(name,key,p,spec):""}`}).join("")}</div>
+  </div>`;
+  el.querySelectorAll("[data-spec]").forEach(b=>b.onclick=()=>{const k=b.dataset.spec; state.pl.spec=k; state.pl.t=plParseTalents(p.cls,PL.specs[k].talents); plAutofill(); writeHash(); renderPlanner()});
+  $("#plPreset").onclick=()=>{state.pl.t=plParseTalents(p.cls,sp.talents);writeHash();renderPlanner()};
+  $("#plClearT").onclick=()=>{state.pl.t=state.pl.t.map(tl=>tl.map(()=>0));writeHash();renderPlanner()};
+  $("#plAuto").onclick=()=>{plAutofill();writeHash();renderPlanner()};
+  $("#plRaid").onchange=e=>{state.pl.raid=e.target.checked;writeHash();renderPlanner()};
+  $("#plPvp").onchange=e=>{state.pl.pvp=e.target.checked;writeHash();renderPlanner()};
+  $("#plLink").onclick=()=>copyText(location.href,"Link copied");
+  el.querySelectorAll(".tal").forEach(c=>{const ti=+c.dataset.ti,i=+c.dataset.i;
+    c.onclick=e=>{const d=e.target.closest("[data-d]"); if(d){plChange(p.cls,ti,i,+d.dataset.d);return} if(e.target.tagName==="A"||e.target.tagName==="IMG"){e.preventDefault()} plChange(p.cls,ti,i,1)};
+    c.oncontextmenu=e=>{e.preventDefault();plChange(p.cls,ti,i,-1)}});
+  el.querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>{state.plPick=state.plPick===b.dataset.pick?null:b.dataset.pick;state.plQ="";renderPlanner();if(state.plPick)$("#plQ")?.focus()});
+  el.querySelectorAll("[data-clear]").forEach(b=>b.onclick=()=>{delete state.pl.gear[b.dataset.clear];writeHash();renderPlanner()});
+  el.querySelectorAll("[data-choose]").forEach(b=>b.onclick=()=>{state.pl.gear[state.plPick]=+b.dataset.choose;state.plPick=null;writeHash();renderPlanner()});
+  const q=$("#plQ"); if(q){q.value=state.plQ;q.oninput=()=>{state.plQ=q.value;const list=$("#plList");if(list)list.innerHTML=plPickerRows(state.plPick,PL_SLOTS.find(s=>s[0]===state.plPick)[1],p,spec);el.querySelectorAll("[data-choose]").forEach(b=>b.onclick=()=>{state.pl.gear[state.plPick]=+b.dataset.choose;state.plPick=null;writeHash();renderPlanner()})}}
+  if(window.$WowheadPower)try{window.$WowheadPower.refreshLinks()}catch(e){}
+}
+function plPickerRows(name,key,p,spec){
+  const used=Object.entries(state.pl.gear).filter(([n])=>n!==name).map(([,id])=>id), q=state.plQ.trim().toLowerCase();
+  const list=plCandidates(key,p,spec).filter(it=>!used.includes(it.id)&&(!q||it.n.toLowerCase().includes(q))).sort((a,b)=>plScore(b,key,spec)-plScore(a,key,spec)).slice(0,40);
+  if(!list.length)return `<div class="muted">Nothing matches.</div>`;
+  return list.map(it=>`<div class="pick"><img src="https://wow.zamimg.com/images/wow/icons/small/${it.ic}.jpg" alt="" width="24" height="24"><div><a href="https://www.wowhead.com/classic/item=${it.id}" data-wowhead="item=${it.id}&domain=classic" target="_blank" rel="noopener" style="color:${PL_QCOLOR[it.q]||"#fff"};font-weight:700">${esc(it.n)}</a> <span class="muted">ilvl ${it.il}${it.raid?" · raid":""}</span><div class="muted" style="font-size:13px">${esc(plStatLine(it))}${it.src?` · ${esc(it.src)}`:""}</div></div><button class="btn small" data-choose="${it.id}">Choose</button></div>`).join("");
+}
+function plPickerHTML(name,key,p,spec){
+  return `<div class="picker tip"><input id="plQ" type="search" placeholder="Search ${esc(name.toLowerCase())} items" aria-label="Search items"><div id="plList">${plPickerRows(name,key,p,spec)}</div><div class="muted" style="font-size:13px;margin-top:6px">Sorted by this spec's stat weights. Showing the top 40.</div></div>`;
+}
+
+/* --- what Forever changes for this class (reported, not beta tooltips) --- */
+const plSrc=s=>`<span class="src src-${esc(s.toLowerCase())}" title="${{Blizzard:"Blizzard post or Deep Dive recap",Press:"Icy Veins, Blizzard Watch, Warcraft Tavern or Method",Fan:"One fan source, unverified"}[s]||""}">${esc(s)}</span>`;
+function plForeverHTML(cls,fv){
+  const li=(x)=>`<li>${esc(x.v)} ${plSrc(x.src)}</li>`;
+  const changed=Object.entries(fv.talents||{}).map(([n,x])=>`<li><b>${esc(n)}:</b> ${esc(x.v)} ${plSrc(x.src)}</li>`).join("");
+  const added=(fv.new||[]).map(li).join(""), notes=(fv.notes||[]).map(li).join(""), gen=(PL.forever.general||[]).map(li).join("");
+  return `<div class="tip pl-forever"><h3>What Forever changes for ${esc(cls)}</h3>
+    <p class="muted" style="font-size:13px;margin:0 0 6px">Reported as of ${esc(PL.asOf)}. The tree above is Classic until beta tooltips exist; these notes do not change any number yet.</p>
+    ${changed?`<div class="label">Changed talents</div><ul>${changed}</ul>`:""}
+    ${added?`<div class="label">New talents and abilities</div><ul>${added}</ul>`:""}
+    ${notes?`<div class="label">Also</div><ul>${notes}</ul>`:""}
+    <details><summary class="label" style="cursor:pointer">Items, stats and talents in general</summary><ul>${gen}</ul></details>
+  </div>`;
+}
+
+/* --- finish a build that came in from the link (talent and gear strings) once the data file is loaded --- */
+function plRestore(){
+  const p=DATA.paths.find(x=>x.name===state.pl.path);
+  if(!PL.specs[state.pl.spec]||PL.specs[state.pl.spec].cls!==p.cls)state.pl.spec=plSpecKey(p.cls,"");
+  state.pl.t=plParseTalents(p.cls,state.pl.tStr||"");
+  const ids=(state.pl.gearStr||"").split(","); state.pl.gear={}; PL_SLOTS.forEach(([n],i)=>{if(ids[i])state.pl.gear[n]=+ids[i]});
+  delete state.pl.tStr; delete state.pl.gearStr;
+}
+
 $("#dataDate").textContent=DATA.asOf;
 readHash();
 showTab(document.querySelector(`nav.tabs button[data-tab="${state.tab}"]`)?state.tab:"find");renderAll();
+if(state.pl&&!state.pl.t)ensurePlanner(()=>{if(!state.pl.t)plRestore();if(state.tab==="planner")renderPlanner()});
 </script>
 </html>
