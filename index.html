@@ -169,6 +169,7 @@ details.char summary::-webkit-details-marker{display:none}
 .tal.maxed{border-color:var(--gold-soft)} .tal.maxed img{border-color:var(--gold)}
 .tal.part{border-color:#2f8cff}
 .tal.locked{opacity:.45}
+.tal b.fx.fx-new,b.fx.fx-new{background:#2f8cff;color:#fff} .tal.is-new{border-style:dashed} .tal.is-new.maxed,.tal.is-new.part{border-style:solid}
 .tal{position:relative} .tal .fx{position:absolute;top:2px;right:2px;font-family:var(--mono);font-size:10px;line-height:1;padding:2px 4px;border-radius:3px;background:var(--gold);color:#000;font-weight:700} b.fx{font-family:var(--mono);font-size:11px;padding:1px 4px;border-radius:3px;background:var(--gold);color:#000}
 .pl-forever{padding:10px 14px} .pl-forever ul{margin:2px 0 10px;padding-left:18px;font-size:14px} .pl-forever li{margin:3px 0} .pl-forever .label{margin-top:6px}
 .src{font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:1px 5px;border-radius:3px;border:1px solid var(--frame-hi);color:var(--ink-2);vertical-align:1px} .src-blizzard{color:var(--uncommon);border-color:var(--uncommon)} .src-press{color:var(--t-blue);border-color:var(--t-blue)} .src-fan{color:var(--t-orange);border-color:var(--t-orange)}
@@ -177,7 +178,9 @@ details.char summary::-webkit-details-marker{display:none}
 .tp button{width:20px;height:20px;padding:0;line-height:1;border:1px solid var(--frame-hi);background:#151c2e;border-radius:3px;cursor:pointer}
 .tp button:disabled{opacity:.3;cursor:default}
 .pl-side{display:grid;gap:12px;align-content:start}
-.pl-stats,.pl-gear{padding:10px 14px}
+.pl-stats,.pl-gear,.pl-dps,.pl-legacy{padding:10px 14px}
+.pl-dpsnum{font-size:30px;line-height:1.1;margin:2px 0 4px} .pl-dpsnum .num{color:var(--gold)}
+.pl-perk{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;padding:6px 0;border-top:1px solid var(--frame);font-size:14px}
 .pl-statgrid{display:grid;grid-template-columns:auto auto auto auto;gap:4px 14px;font-size:14px}
 @media (max-width:560px){.pl-statgrid{grid-template-columns:auto auto}}
 .slot{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--frame)}
@@ -249,7 +252,7 @@ details.char summary::-webkit-details-marker{display:none}
 </section>
 
 <section class="view" data-view="legacy" hidden>
-  <div><h2>Legacy points</h2><p class="lede">65 points can be earned across the account at launch; 16 can be spent on each character (Blizzard). Values are Wowhead's launch-era reporting. This planner assumes one point per rank, which is not yet confirmed.</p></div>
+  <div><h2>Legacy points</h2><p class="lede">65 points can be earned across the account at launch; 16 can be spent on each character (Blizzard). Values are Wowhead's launch-era reporting. This planner assumes one point per rank, which is not yet confirmed. The same picker sits inside the talents and gear planner, where a perk with a stat effect changes the stats and damage estimate as you add points.</p></div>
   <div class="pool tip"><div><div class="label">Spent on this character</div><div class="num" style="font-size:22px"><span id="spent">0</span> / 16</div></div><div class="pips" id="pips"></div><button class="btn small" id="legacyReset">Clear</button></div>
   <div class="cards" id="legacy"></div>
 </section>
@@ -345,13 +348,13 @@ function readHash(){
   if(h.get("cmp"))state.cmp=h.get("cmp").split("~").filter(n=>DATA.paths.some(p=>p.name===n)).slice(0,3);
   if(h.get("lg"))h.get("lg").split("~").forEach(x=>{const [i,n]=x.split(".");if(DATA.legacy[+i])state.legacy[+i]=+n});
   if(h.get("t"))state.tab=h.get("t");
-  if(h.get("pl")){const [pi,spec,tal,gear,raid,pvp]=h.get("pl").split("|");const p=DATA.paths[+pi];if(p){state.pl={path:p.name,spec,tStr:tal||"",gearStr:gear||"",raid:raid==="1",pvp:pvp==="1",t:null,gear:{}}}}
+  if(h.get("pl")){const [pi,spec,tal,gear,raid,pvp,ver,opt]=h.get("pl").split("|");const p=DATA.paths[+pi];if(p){state.pl={path:p.name,spec,tStr:tal||"",gearStr:gear||"",raid:raid==="1",pvp:pvp==="1",ver:ver||"",opt:opt||"",t:null,gear:{}}}}
 }
 function writeHash(){
   const h=new URLSearchParams();
   for(const k in SHORT)if(state.I[k]!==DEFAULTS[k])h.set(SHORT[k],state.I[k]);
   if(state.cmp.length)h.set("cmp",state.cmp.join("~"));
-  if(state.pl&&state.pl.t)h.set("pl",[DATA.paths.findIndex(p=>p.name===state.pl.path),state.pl.spec,plTalentString(state.pl.t),PL_SLOTS.map(([n])=>state.pl.gear[n]||"").join(","),state.pl.raid?1:0,state.pl.pvp?1:0].join("|"));
+  if(state.pl&&state.pl.t)h.set("pl",[DATA.paths.findIndex(p=>p.name===state.pl.path),state.pl.spec,plTalentString(state.pl.t),PL_SLOTS.map(([n])=>state.pl.gear[n]||"").join(","),state.pl.raid?1:0,state.pl.pvp?1:0,PL?PL.treeVer:"",`b${state.pl.buffs?1:0}c${state.pl.cons?1:0}d${state.pl.deb?1:0}`].join("|"));
   const lg=Object.entries(state.legacy).filter(([,n])=>n>0).map(([i,n])=>i+"."+n).join("~");if(lg)h.set("lg",lg);
   if(state.tab!=="find")h.set("t",state.tab);
   history.replaceState(null,"","#"+h.toString());
@@ -566,8 +569,8 @@ function renderAll(){
   $("#cmpCount").textContent=state.cmp.length?`(${state.cmp.length})`:"";
 }
 /* ---------- Planner: talents and gear for one path (15 Sep 2026) ----------
-   Data comes from planner-data.js (built by make_planner_data.py from WoWSims Classic, MIT). Classic-era trees and items
-   stand in until Forever beta data exists. Loaded only when the planner opens, so the main page stays light. */
+   Data comes from planner-data.js (built by make_planner_data.py): Forever talent trees from Wowhead's BlizzCon data, items from
+   WoWSims Classic (MIT) with Forever's stat rules applied. Loaded only when the planner opens, so the main page stays light. */
 const PL_SLOTS=[["Head",1],["Neck",2],["Shoulder",3],["Back",4],["Chest",5],["Wrist",6],["Hands",7],["Waist",8],["Legs",9],["Feet",10],["Ring 1",11],["Ring 2",11],["Trinket 1",12],["Trinket 2",12],["Main hand","mh"],["Off hand","oh"],["Ranged","rng"]];
 const PL_CLASS_ID={Druid:1,Hunter:2,Mage:3,Paladin:4,Priest:5,Rogue:6,Shaman:7,Warlock:8,Warrior:9};
 const PL_QCOLOR={2:"#1eff00",3:"#0070dd",4:"#a335ee",5:"#ff8000"};
@@ -603,26 +606,26 @@ function plOpen(pathName,specName){
   ensurePlanner(()=>{
     const spec=plSpecKey(p.cls,specName||plDefaultSpec(p,state.I)||"");
     if(!state.pl||state.pl.path!==pathName||state.pl.spec!==spec){
-      state.pl={path:pathName,spec,t:plParseTalents(p.cls,PL.specs[spec].talents),gear:{},raid:false,pvp:false};
+      state.pl={path:pathName,spec,t:plParseTalents(p.cls,PL.specs[spec].talents),gear:{},raid:false,pvp:false,buffs:true,cons:false,deb:true};
       plAutofill();
     }
     state.plPick=null; writeHash(); renderPlanner();
   });
 }
-/* --- talent rules: 51 points, rows unlock at 5 points per row in that tree, prerequisite must be maxed --- */
+/* --- talent rules: 51 points, rows unlock at 5 points per row in that tree, prerequisite needs its listed points --- */
 const plTotal=()=>state.pl.t.reduce((s,tl)=>s+tl.reduce((a,b)=>a+b,0),0);
 function plTreeOk(cls,ti){
   const tl=plSorted(cls)[ti], pts=state.pl.t[ti];
   return tl.every((t,i)=>{ if(!pts[i])return true;
     const below=tl.reduce((s,x,j)=>s+(x.r<t.r?pts[j]:0),0); if(below<5*t.r)return false;
-    if(t.pre){const j=tl.findIndex(x=>x.r===t.pre[0]&&x.c===t.pre[1]); if(j>=0&&pts[j]<tl[j].max)return false}
+    if(t.pre){const j=tl.findIndex(x=>x.r===t.pre[0]&&x.c===t.pre[1]); if(j>=0&&pts[j]<(t.pq||tl[j].max))return false}
     return true });
 }
 function plCanAdd(cls,ti,i){
   const tl=plSorted(cls)[ti], t=tl[i], pts=state.pl.t[ti];
   if(plTotal()>=51||pts[i]>=t.max)return false;
   const below=tl.reduce((s,x,j)=>s+(x.r<t.r?pts[j]:0),0); if(below<5*t.r)return false;
-  if(t.pre){const j=tl.findIndex(x=>x.r===t.pre[0]&&x.c===t.pre[1]); if(j>=0&&pts[j]<tl[j].max)return false}
+  if(t.pre){const j=tl.findIndex(x=>x.r===t.pre[0]&&x.c===t.pre[1]); if(j>=0&&pts[j]<(t.pq||tl[j].max))return false}
   return true;
 }
 function plChange(cls,ti,i,d){
@@ -644,6 +647,7 @@ function plCandidates(slotKey,p,spec){
   const pr=PL.prof[p.cls], sp=PL.specs[spec];
   return PL.items.filter(it=>{
     if(!plAllowed(it,p))return false; if(it.raid&&!state.pl.raid)return false; if(it.pvp&&!state.pl.pvp)return false;
+    if((slotKey==="mh"||slotKey==="oh")&&sp.wt&&it.t===13&&it.w!==5&&it.w!==7&&!sp.wt.includes(it.w))return false;
     if(slotKey==="mh")return it.t===13&&((it.h===1||it.h===2)&&pr.w.includes(it.w)||(it.h===4&&pr.two.includes(it.w)));
     if(slotKey==="oh")return it.t===13&&(((it.h===2||it.h===3)&&sp.dw&&pr.w.includes(it.w))||(it.w===7&&pr.sh)||(it.w===5&&pr.oh));
     if(slotKey==="rng")return it.t===14&&pr.rng.includes(it.r);
@@ -670,19 +674,61 @@ function plAutofill(){
   const r=best("rng"); if(r)g["Ranged"]=r.id;
   state.pl.gear=g;
 }
-function plStatLine(it){return Object.entries(it.s).map(([k,v])=>PL.stat[k].includes("%")?`${v}${PL.stat[k]}`:`+${v} ${PL.stat[k]}`).join(", ")+(it.d?` · ${it.d[0]}–${it.d[1]} (${plDps(it).toFixed(1)} dps, ${it.d[2]}s)`:"")}
+function plStatLine(it){return Object.entries(it.s).map(([k,v])=>PL.stat[k].includes("%")?`${v}${PL.stat[k]}`:`+${v} ${PL.stat[k]}`).join(", ")+(it.d?` · ${it.d[0]}–${it.d[1]} (${plDps(it).toFixed(1)} dps, ${it.d[2]}s)`:"")+(it.fx?` · Forever: ${it.fx.join("; ")}`:"")}
+/* --- buffs, consumables and boss debuffs (Classic level-60 values; toggled in the DPS panel) --- */
+const PL_RAID_BUFFS=[["Mark of the Wild","+12 all stats"],["Battle Shout","+232 attack power"],["Blessing of Might","+185 attack power"],["Strength of Earth Totem","+77 Strength"],["Grace of Air Totem","+77 Agility"],["Leader of the Pack","+3% crit"],["Trueshot Aura","+100 ranged attack power"],["Arcane Intellect","+31 Intellect"]];
+const PL_CONS_MELEE=[["Elixir of the Mongoose","+25 Agility, +2% crit"],["Juju Power","+30 Strength"],["Winterfall Firewater","+35 attack power"],["Smoked Desert Dumplings","+20 Strength"]];
+const PL_CONS_CASTER=[["Flask of Supreme Power","+150 spell damage"],["Greater Arcane Elixir","+35 spell damage"],["Runn Tum Tuber Surprise","+10 Intellect"]];
+const PL_DEBUFFS=[["Sunder Armor x5","-2250 armor"],["Faerie Fire","-505 armor"],["Curse of Recklessness","-640 armor"],["Hunter's Mark","+110 ranged attack power"],["Curse of the Elements","+10% Fire and Frost damage"],["Curse of Shadow","+10% Shadow and Arcane damage"]];
+/* racial effects that change a damage number (Classic values where Forever has not said otherwise) */
+const PL_RACIAL={Orc:{apBasePct:25*15/120,note:"Blood Fury: +25% base attack power for 15 s every 2 min, averaged (Classic value)"},Troll:{haste:20*10/180,note:"Berserking: 10 to 30% attack and casting speed for 10 s every 3 min, averaged at 20%"},Tauren:{hit:1,note:"Endurance now also gives 1% hit (press report)"},Gnome:{intPct:5,note:"Expansive Mind: +5% Intellect (Classic)"}};
+const plIsCaster=sp=>!!(sp.w[5]||sp.w[41]);
+/* Gather every structured effect on this build: talents (per taken rank), racial, Legacy perks. Returns a list of {k,v,s,src}. */
+function plEffects(p,sp){
+  const out=[]; const sorted=plSorted(p.cls);
+  sorted.forEach((tl,ti)=>tl.forEach((t,i)=>{const r=state.pl.t[ti][i]; if(r&&t.fx&&t.fx[r-1])t.fx[r-1].forEach(e=>out.push({...e,src:t.n}))}));
+  const rc=PL_RACIAL[p.race]; if(rc)for(const k in rc)if(k!=="note")out.push({k,v:rc[k],src:p.race+" racial"});
+  DATA.legacy.forEach((l,i)=>{const r=state.legacy[i]||0; if(r&&l.fx)l.fx.forEach(e=>out.push({...e,v:e.v*r,src:"Legacy: "+l.Perk}))});
+  return out;
+}
 function plStats(p){
-  const b=PL.base.cls[p.cls], r=PL.base.race[p.race]||{}, g=Array(44).fill(0);
-  for(const id of Object.values(state.pl.gear)){const it=plItem(id); if(it)for(const k in it.s)g[+k]+=it.s[k]}
-  const str=b.str+(r.str||0)+g[0], agi=b.agi+(r.agi||0)+g[1], sta=b.sta+(r.sta||0)+g[2], int=b.int+(r.int||0)+g[3], spi=b.spi+(r.spi||0)+g[4];
-  const school=[[6,"Arcane"],[7,"Fire"],[8,"Frost"],[9,"Holy"],[10,"Nature"],[11,"Shadow"]].filter(([k])=>g[k]).map(([k,n])=>`+${g[k]} ${n}`).join(", ");
-  const rows=[["Health",b.hp+sta*10+g[34]],["Mana",b.mana?b.mana+int*15+g[23]:null],["Strength",str],["Agility",agi],["Stamina",sta],["Intellect",int],["Spirit",spi],
-    ["Attack power",b.ap+str*b.apStr+agi*b.apAgi+g[17]+g[43]],["Ranged attack power",b.rap!=null?b.rap+agi*(b.rapAgi||0)+g[27]+g[17]:null],
-    ["Crit %",(b.mcrit+agi*b.critAgi+g[19]).toFixed(2)],["Hit %",g[18]||null],["Spell power",g[5]+g[42]||null],["School power",school||null],["Healing",g[41]+g[5]||null],
-    ["Spell crit %",b.mana?(b.scrit+int*b.critInt+g[14]).toFixed(2):null],["Spell hit %",g[13]||null],["MP5",g[12]||null],["Armor",g[26]+g[40]+agi*2],
-    ["Defense",g[28]||null],["Dodge %",g[31]||null],["Parry %",g[32]||null],["Block %",g[29]||null],["Block value",g[30]||null],
+  const b=PL.base.cls[p.cls], r=PL.base.race[p.race]||{}, g=Array(44).fill(0), sp=PL.specs[state.pl.spec], caster=plIsCaster(sp);
+  const gearW={}; for(const [name,id] of Object.entries(state.pl.gear)){const it=plItem(id); if(it){for(const k in it.s)g[+k]+=it.s[k]; if(it.d)gearW[name]=it}}
+  const fx=plEffects(p,sp), sum=k=>fx.filter(e=>e.k===k).reduce((a,e)=>a+e.v,0), bySchool=k=>fx.filter(e=>e.k===k).reduce((o,e)=>(o[e.s]=(o[e.s]||0)+e.v,o),{});
+  const R=plRanks(p.cls), own=name=>R.rank(name)>0;
+  const buffs=state.pl.buffs, cons=state.pl.cons, deb=state.pl.deb;
+  const add={str:0,agi:0,sta:0,int:0,spi:0,ap:0,rap:0,crit:0,sd:0};
+  if(buffs){add.str+=12+77;add.agi+=12+77;add.sta+=12;add.int+=12+31;add.spi+=12;add.ap+=185+(p.cls==="Warrior"?0:232);add.rap+=own("Trueshot Aura")?0:100;add.crit+=own("Leader of the Pack")?0:3}
+  if(p.cls==="Warrior")add.ap+=232; // a warrior always has his own Battle Shout
+  if(p.cls==="Hunter"&&own("Trueshot Aura"))add.rap+=100;
+  if(p.cls==="Druid"&&own("Leader of the Pack"))add.crit+=3;
+  if(cons){if(caster){add.sd+=185;add.int+=10}else{add.agi+=25;add.crit+=2;add.str+=30+20;add.ap+=35}}
+  const pct=k=>1+sum(k)/100;
+  const str=Math.round((b.str+(r.str||0)+g[0]+add.str)*pct("strPct")), agi=Math.round((b.agi+(r.agi||0)+g[1]+add.agi)*pct("agiPct")), sta=Math.round((b.sta+(r.sta||0)+g[2]+add.sta)*pct("staPct")), int=Math.round((b.int+(r.int||0)+g[3]+add.int)*pct("intPct")), spi=Math.round((b.spi+(r.spi||0)+g[4]+add.spi)*pct("spiPct"));
+  const baseAp=b.ap+(b.str+(r.str||0))*b.apStr+(b.agi+(r.agi||0))*b.apAgi;
+  const ap=Math.round(b.ap+str*b.apStr+agi*b.apAgi+g[17]+add.ap+sum("apInt")/100*int+sum("apLevel")/100*60+sum("apBasePct")/100*baseAp);
+  const rap=b.rap!=null?Math.round(b.rap+agi*(b.rapAgi||0)+g[27]+g[17]+add.rap+(deb?110:0)):null;
+  const crit=b.mcrit+agi*b.critAgi+g[19]+sum("crit")+add.crit, scrit=b.mana?b.scrit+int*b.critInt+g[19]+sum("scrit"):0;
+  const hit=g[18]+sum("hit"), shit=g[18]+sum("shit");
+  const spellDmg=g[5]+g[42]+add.sd+Math.round(sum("spInt")/100*int);
+  const school={}; [[6,"Arcane"],[7,"Fire"],[8,"Frost"],[9,"Holy"],[10,"Nature"],[11,"Shadow"]].forEach(([k,n])=>{if(g[k])school[n]=g[k]});
+  const wpn=it=>it&&it.d?{min:it.d[0],max:it.d[1],speed:it.d[2],w:it.w,h:it.h,r:it.r}:null;
+  const S={str,agi,sta,int,spi,ap,rap,crit,scrit,hit,shit,lessDodged:g[22],spellDmg,school,schoolPct:bySchool("school"),scritSchool:bySchool("scritSchool"),shitSchool:bySchool("shitSchool"),spellCrit:bySchool("spellCrit"),
+    allDmg:sum("allDmg"),twoHand:sum("twoHand"),oneHand:sum("oneHand"),ranged:sum("ranged"),abilCrit:sum("abilCrit"),rangedAbilCrit:sum("rangedAbilCrit"),haste:sum("haste"),feralAp:g[43],
+    mh:wpn(gearW["Main hand"]),oh:wpn(gearW["Off hand"]),rng:wpn(gearW["Ranged"]),deb,debSchool:deb?{Fire:1,Frost:1,Shadow:1,Arcane:1}:{},targetArmor:deb?DPS_TARGET.armor-2250-505-640:DPS_TARGET.armor,caster,fx};
+  const schoolTxt=Object.entries(school).map(([n,v])=>`+${v} ${n}`).join(", ");
+  const rows=[["Health",Math.round((b.hp+sta*10+g[34])*(1+sum("hpPct")/100))],["Mana",b.mana?b.mana+int*15+g[23]:null],["Strength",str],["Agility",agi],["Stamina",sta],["Intellect",int],["Spirit",spi],
+    ["Attack power",ap],["Ranged attack power",rap],
+    ["Crit % (attacks)",crit.toFixed(2)],hit===shit?["Hit % (attacks and spells)",hit||null]:["Hit % (attacks)",hit||null],hit===shit?null:["Hit % (spells)",shit||null],["Less dodged or parried %",g[22]||null],["Spell damage",spellDmg||null],["School power",schoolTxt||null],["Healing",g[41]+g[5]||null],
+    ["Crit % (spells)",b.mana?scrit.toFixed(2):null],["MP5",g[12]||null],["Armor",Math.round((g[26]+g[40])*pct("armorPct")+agi*2)],
+    ["Defense",g[28]+sum("defense")||null],["Dodge %",g[31]+sum("dodge")||null],["Parry %",g[32]+sum("parry")||null],["Block %",g[29]+sum("block")||null],["Block value",g[30]||null],
     ["Resistances",[[35,"Arc"],[36,"Fire"],[37,"Frost"],[38,"Nat"],[39,"Shad"]].filter(([k])=>g[k]).map(([k,n])=>`${g[k]} ${n}`).join(", ")||null]];
-  return rows.filter(([,v])=>v!==null&&v!=="");
+  // multipliers that have no single stat line, shown as an effects list
+  const effects=[]; const pushPct=(k,label)=>{const v=sum(k); if(v)effects.push(`${label} +${v}%`)};
+  pushPct("allDmg","All damage"); pushPct("twoHand","Two-handed weapon damage"); pushPct("oneHand","One-handed weapon damage"); pushPct("ranged","Ranged weapon damage"); pushPct("abilCrit","Ability crit damage bonus"); pushPct("rangedAbilCrit","Ranged ability crit damage bonus"); pushPct("haste","Attack speed");
+  for(const [s,v] of Object.entries(S.schoolPct))effects.push(`${s} spell damage +${v}%`); for(const [s,v] of Object.entries(S.scritSchool))effects.push(`${s} spell crit +${v}%`); for(const [s,v] of Object.entries(S.shitSchool))effects.push(`${s} spell hit +${v}%`); for(const [s,v] of Object.entries(S.spellCrit))effects.push(`${s} crit damage bonus +${v}%`);
+  const sources=[...new Set(fx.map(e=>e.src))];
+  return {rows:rows.filter(x=>x&&x[1]!==null&&x[1]!==""),S,effects,sources};
 }
 /* --- render --- */
 function renderPlanner(){
@@ -699,15 +745,19 @@ function renderPlanner(){
     <div><div class="label">Spec</div><div class="chips">${specs.map(k=>`<button class="chip" data-spec="${esc(k)}" aria-pressed="${k===spec}">${esc(k.replace(/ \(.*\)$/,""))}</button>`).join("")}</div></div>
     <div class="chips"><button class="btn small" id="plPreset" ${sp.talents?"":"disabled"}>Load suggested talents</button><button class="btn small" id="plClearT">Clear talents</button><button class="btn small" id="plAuto">Suggest starter gear</button><label class="muted" style="font-size:14px;align-self:center"><input type="checkbox" id="plRaid" ${state.pl.raid?"checked":""}> include raid-tier items</label><label class="muted" style="font-size:14px;align-self:center"><input type="checkbox" id="plPvp" ${state.pl.pvp?"checked":""}> include PvP rank rewards</label><button class="btn small" id="plLink">Copy link to this build</button></div>
   </div>
-  <p class="muted" style="font-size:14px">${esc(PL.credit)} ${sp.talents?(sp.own?"The suggested talents are this page's Classic-era build for this spec (WoWSims has no usable preset for it).":"The suggested talents are the WoWSims Classic raid build for this spec."):"No suggested build for this spec yet; place the points yourself."} Starter gear is picked by this page's own stat weights from dungeon, quest, crafted, vendor and world items up to item level 65${state.pl.raid?", plus raid-tier items":""}${state.pl.pvp?", plus PvP rank rewards":""}. Hover any talent or item for its tooltip. Talents marked <b class="fx">F</b> have a reported Forever change; see the panel below the stats.</p>
+  <p class="muted" style="font-size:14px">${esc(PL.credit)} ${sp.talents?"The suggested talents are this page's own first build on the Forever trees, written from the talent text before anyone has played it; no guide has published Forever builds yet.":"No suggested build for this spec yet; place the points yourself."} Starter gear is picked by this page's own stat weights from Classic dungeon, quest, crafted, vendor and world items up to item level 65${state.pl.raid?", plus raid-tier items":""}${state.pl.pvp?", plus PvP rank rewards":""}; Forever's new dungeons and reworked loot are not in any database yet. Hover a talent for its text, and an item for its Classic tooltip. <b class="fx fx-new">N</b> marks a talent that is new in Forever; <b class="fx">F</b> marks one with a reported change listed below the stats.</p>
   <div class="pl-points"><span class="num">${total} / 51</span> points, <span class="num">${51-total}</span> left · ${trees.map((t,ti)=>`${esc(t.name)} <b class="num">${state.pl.t[ti].reduce((a,b)=>a+b,0)}</b>`).join(" · ")} <span class="muted">· click a talent to add a point, right-click or − to take one back</span></div>
   <div class="pl-talents">
       ${trees.map((t,ti)=>`<div class="tree tip"><h3>${esc(t.name)} <span class="num muted">${state.pl.t[ti].reduce((a,b)=>a+b,0)}</span></h3><div class="tgrid">${sorted[ti].map((x,i)=>{const pts=state.pl.t[ti][i], can=plCanAdd(p.cls,ti,i), st=pts>=x.max?"maxed":pts?"part":can?"avail":"locked";
-        const fx=ftal[x.n]; return `<div class="tal ${st}${fx?" has-fx":""}" style="grid-row:${x.r+1};grid-column:${x.c+1}" data-ti="${ti}" data-i="${i}" title="${esc(x.n)}${fx?" — Forever ("+esc(fx.src)+"): "+esc(fx.v):""}">${fx?`<b class="fx" aria-label="Forever change">F</b>`:""}<a href="https://www.wowhead.com/classic/spell=${x.sp[Math.max(0,Math.min(pts,x.max)-1)]}" data-wowhead="spell=${x.sp[Math.max(0,Math.min(pts,x.max)-1)]}&domain=classic" target="_blank" rel="noopener" tabindex="-1"><img src="${icon(x.ic,"medium")}" alt=""></a><div class="tn">${esc(x.n)}</div><div class="tp"><button aria-label="Remove a point from ${esc(x.n)}" data-d="-1" ${pts?"":"disabled"}>−</button><span class="num">${pts}/${x.max}</span><button aria-label="Add a point to ${esc(x.n)}" data-d="1" ${can?"":"disabled"}>+</button></div></div>`}).join("")}</div></div>`).join("")}
+        const fx=ftal[x.n]; return `<div class="tal ${st}${fx?" has-fx":""}${x.new?" is-new":""}" style="grid-row:${x.r+1};grid-column:${x.c+1}" data-ti="${ti}" data-i="${i}" title="${esc(plTalentTip(x,pts,sorted[ti],fx))}">${fx?`<b class="fx" aria-label="Forever change">F</b>`:x.new?`<b class="fx fx-new" aria-label="New in Forever">N</b>`:""}<img src="${icon(x.ic,"medium")}" alt=""><div class="tn">${esc(x.n)}</div><div class="tp"><button aria-label="Remove a point from ${esc(x.n)}" data-d="-1" ${pts?"":"disabled"}>−</button><span class="num">${pts}/${x.max}</span><button aria-label="Add a point to ${esc(x.n)}" data-d="1" ${can?"":"disabled"}>+</button></div></div>`}).join("")}</div></div>`).join("")}
   </div>
   <div class="pl-grid">
     <div class="pl-side">
-      <div class="tip pl-stats"><h3>Stats at level 60 with this gear</h3><div class="pl-statgrid">${plStats(p).map(([l,v])=>`<span>${esc(l)}</span><b class="num">${esc(v)}</b>`).join("")}</div><p class="muted" style="font-size:13px;margin:8px 0 0">Base numbers from Classic level 60; talents and buffs are not added in yet.</p></div>
+      ${(st=>`<div class="tip pl-stats"><h3>Stats at level 60 with this build</h3><div class="pl-statgrid">${st.rows.map(([l,v])=>`<span>${esc(l)}</span><b class="num">${esc(v)}</b>`).join("")}</div>
+      ${st.effects.length?`<div class="label" style="margin-top:8px">Also from talents and racials</div><div class="muted" style="font-size:13px">${st.effects.map(esc).join(" · ")}</div>`:""}
+      <p class="muted" style="font-size:13px;margin:8px 0 0">Classic level-60 base numbers plus race, gear, talents (${st.sources.length?esc(st.sources.slice(0,6).join(", "))+(st.sources.length>6?"…":""):"none with a stat effect yet"}), Legacy perks${state.pl.buffs?", raid buffs":""}${state.pl.cons?", consumables":""}. Change a talent, perk or item and every number here moves.</p></div>
+      ${plDpsHTML(p,spec,st.S)}
+      ${plLegacyHTML()}`)(plStats(p))}
       ${plForeverHTML(p.cls,fv)}
     </div>
       <div class="tip pl-gear"><h3>Gear</h3>${PL_SLOTS.map(([name,key])=>{const id=state.pl.gear[name], it=id&&plItem(id), open=state.plPick===name;
@@ -721,8 +771,11 @@ function renderPlanner(){
   $("#plRaid").onchange=e=>{state.pl.raid=e.target.checked;writeHash();renderPlanner()};
   $("#plPvp").onchange=e=>{state.pl.pvp=e.target.checked;writeHash();renderPlanner()};
   $("#plLink").onclick=()=>copyText(location.href,"Link copied");
+  ["buffs","cons","deb"].forEach(k=>{const c=$("#plOpt-"+k); if(c)c.onchange=e=>{state.pl[k]=e.target.checked;writeHash();renderPlanner()}});
+  el.querySelectorAll("[data-lg]").forEach(b=>b.onclick=()=>{const i=+b.dataset.lg;state.legacy[i]=Math.max(0,(state.legacy[i]||0)+ +b.dataset.d);writeHash();renderPlanner();renderLegacy()});
+  const lr=$("#plLegacyReset"); if(lr)lr.onclick=()=>{state.legacy={};writeHash();renderPlanner();renderLegacy()};
   el.querySelectorAll(".tal").forEach(c=>{const ti=+c.dataset.ti,i=+c.dataset.i;
-    c.onclick=e=>{const d=e.target.closest("[data-d]"); if(d){plChange(p.cls,ti,i,+d.dataset.d);return} if(e.target.tagName==="A"||e.target.tagName==="IMG"){e.preventDefault()} plChange(p.cls,ti,i,1)};
+    c.onclick=e=>{const d=e.target.closest("[data-d]"); if(d){plChange(p.cls,ti,i,+d.dataset.d);return} plChange(p.cls,ti,i,1)};
     c.oncontextmenu=e=>{e.preventDefault();plChange(p.cls,ti,i,-1)}});
   el.querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>{state.plPick=state.plPick===b.dataset.pick?null:b.dataset.pick;state.plQ="";renderPlanner();if(state.plPick)$("#plQ")?.focus()});
   el.querySelectorAll("[data-clear]").forEach(b=>b.onclick=()=>{delete state.pl.gear[b.dataset.clear];writeHash();renderPlanner()});
@@ -740,6 +793,19 @@ function plPickerHTML(name,key,p,spec){
   return `<div class="picker tip"><input id="plQ" type="search" placeholder="Search ${esc(name.toLowerCase())} items" aria-label="Search items"><div id="plList">${plPickerRows(name,key,p,spec)}</div><div class="muted" style="font-size:13px;margin-top:6px">Sorted by this spec's stat weights. Showing the top 40.</div></div>`;
 }
 
+/* --- talent tooltip text: Wowhead's Forever data carries its own rank descriptions (its talent ids are not spell pages) --- */
+function plTalentTip(x,pts,tl,fx){
+  const lines=[`${x.n}${x.new?" (new in Forever)":""} · rank ${pts}/${x.max}`];
+  if(x.cost)lines.push(x.cost);
+  if(pts)lines.push(`Now: ${x.d[pts-1]}`);
+  if(pts<x.max)lines.push(`${pts?"Next":"Rank 1"}: ${x.d[pts]}`);
+  const need=[]; if(x.r)need.push(`${x.r*5} points in the rows above`);
+  if(x.pre){const q=tl.find(y=>y.r===x.pre[0]&&y.c===x.pre[1]); if(q)need.push(`${x.pq} in ${q.n}`)}
+  if(need.length)lines.push("Requires "+need.join(" and "));
+  if(fx)lines.push(`Reported (${fx.src}): ${fx.v}`);
+  return lines.join("\n");
+}
+
 /* --- what Forever changes for this class (reported, not beta tooltips) --- */
 const plSrc=s=>`<span class="src src-${esc(s.toLowerCase())}" title="${{Blizzard:"Blizzard post or Deep Dive recap",Press:"Icy Veins, Blizzard Watch, Warcraft Tavern or Method",Fan:"One fan source, unverified"}[s]||""}">${esc(s)}</span>`;
 function plForeverHTML(cls,fv){
@@ -747,7 +813,7 @@ function plForeverHTML(cls,fv){
   const changed=Object.entries(fv.talents||{}).map(([n,x])=>`<li><b>${esc(n)}:</b> ${esc(x.v)} ${plSrc(x.src)}</li>`).join("");
   const added=(fv.new||[]).map(li).join(""), notes=(fv.notes||[]).map(li).join(""), gen=(PL.forever.general||[]).map(li).join("");
   return `<div class="tip pl-forever"><h3>What Forever changes for ${esc(cls)}</h3>
-    <p class="muted" style="font-size:13px;margin:0 0 6px">Reported as of ${esc(PL.asOf)}. The tree above is Classic until beta tooltips exist; these notes do not change any number yet.</p>
+    <p class="muted" style="font-size:13px;margin:0 0 6px">Reported as of ${esc(PL.asOf)}. The tree above is Forever's BlizzCon version; these notes are the wider reporting and do not change any number.</p>
     ${changed?`<div class="label">Changed talents</div><ul>${changed}</ul>`:""}
     ${added?`<div class="label">New talents and abilities</div><ul>${added}</ul>`:""}
     ${notes?`<div class="label">Also</div><ul>${notes}</ul>`:""}
@@ -755,13 +821,297 @@ function plForeverHTML(cls,fv){
   </div>`;
 }
 
+
+/* --- DPS estimate panel (model in dps.js) with the buff, consumable and boss-debuff toggles --- */
+function plDpsHTML(p,spec,S){
+  const est=plDpsEstimate(p,spec,S);
+  const opt=(k,label,title)=>`<label class="muted" style="font-size:13px" title="${esc(title)}"><input type="checkbox" id="plOpt-${k}" ${state.pl[k]?"checked":""}> ${label}</label>`;
+  const toggles=`<div class="chips" style="margin:6px 0">${opt("buffs","raid buffs",PL_RAID_BUFFS.map(x=>x.join(": ")).join("\n"))}${opt("cons","consumables",(S.caster?PL_CONS_CASTER:PL_CONS_MELEE).map(x=>x.join(": ")).join("\n"))}${opt("deb","boss debuffs",PL_DEBUFFS.map(x=>x.join(": ")).join("\n"))}</div>`;
+  if(est.none)return `<div class="tip pl-dps"><h3>Damage estimate</h3><p class="muted" style="font-size:14px;margin:4px 0">${est.none==="tank"||est.none==="healer"?`No damage estimate for a ${est.none} spec. Pick a damage spec above to see one.`:"No damage model for this spec yet."}</p>${toggles}</div>`;
+  const rc=PL_RACIAL[p.race];
+  return `<div class="tip pl-dps"><h3>Damage estimate <span class="muted" style="font-weight:400;font-size:13px">against a ${esc(DPS_TARGET.name)}</span></h3>
+    <div class="pl-dpsnum"><b class="num" id="plDpsTotal">${Math.round(est.total)}</b><span class="muted"> DPS, estimated</span></div>
+    ${toggles}
+    <div class="pl-statgrid" style="grid-template-columns:auto auto">${est.parts.map(([n,v])=>`<span>${esc(n)}</span><b class="num">${Math.round(v)}</b>`).join("")}</div>
+    <details style="margin-top:8px"><summary class="label" style="cursor:pointer">How this number is made</summary><ul class="muted" style="font-size:13px;padding-left:18px;margin:6px 0">
+      <li>An expected-value estimate, not a WoWSims-style simulation: average damage per swing and per ability at its cooldown or resource rate, through the Classic attack table for a level 63 boss (9% miss, 28% for dual-wield white swings, 6.5% dodge, 40% glancing at 65% damage, crit reduced 1.8%). Forever removed weapon skill; its replacement is unknown, so the Classic 300-skill table is used.</li>
+      <li>Boss armor ${S.targetArmor}${state.pl.deb?" after Sunder Armor, Faerie Fire and Curse of Recklessness":""}; ${S.caster?"spells hit 83% before hit talents and gear, 99% at most, no partial resists":"no armor penetration except from talents"}.</li>
+      <li>Talent numbers come from the Forever tree text you have taken; ability base numbers are Classic level-60 ranks until beta tooltips exist.</li>
+      ${rc?`<li>${esc(rc.note)}.</li>`:""}${est.notes.map(n=>`<li>${esc(n)}</li>`).join("")}
+      <li>Not modelled: fight length and mana running out, movement, threat, item procs and trinket uses, world buffs, weapon enchants.</li></ul></details>
+  </div>`;
+}
+/* --- Legacy perks inside the planner: the same 16-point pool as the Legacy tab (state.legacy, saved in the link) --- */
+const plLegacyMax=l=>{const m=String(l.Ranks).match(/\/(\d+)/);return m?+m[1]:0};
+function plLegacyHTML(){
+  const spent=Object.values(state.legacy).reduce((a,b)=>a+b,0);
+  const branches=[...new Set(DATA.legacy.map(l=>l.Branch))];
+  const anyFx=DATA.legacy.some(l=>l.fx);
+  return `<div class="tip pl-legacy"><h3>Legacy points <span class="num" style="font-weight:400;font-size:14px"><span id="plLgSpent">${spent}</span> / 16</span> <button class="btn small" id="plLegacyReset" style="float:right">Clear</button></h3>
+    <p class="muted" style="font-size:13px;margin:0 0 6px">The 16 perks known so far (Wowhead, launch-era reporting; one point per rank assumed). ${anyFx?"Perks with a stat effect move the stats and the estimate above.":"None of them changes a level-60 combat stat, so the numbers above do not move yet; they change leveling, professions, gold and utility. The wiring is in place: a perk with a confirmed stat effect will move the stats and the estimate the moment it is added to the data."}</p>
+    ${branches.map(b=>`<div class="label" style="margin-top:6px">${esc(b)}</div>${DATA.legacy.map((l,i)=>{if(l.Branch!==b)return "";const max=plLegacyMax(l), n=state.legacy[i]||0;
+      return `<div class="pl-perk"><div><b>${esc(l.Perk)}</b> <span class="muted" style="font-size:13px">${esc(l["Per-rank or activation effect"])}${l["Restrictions / trigger"]?" · "+esc(l["Restrictions / trigger"]):""}</span>${l.fx?` <b class="fx">stat</b>`:""}</div>
+        ${max?`<div class="stepper"><button aria-label="Remove a rank of ${esc(l.Perk)}" data-lg="${i}" data-d="-1" ${n>0?"":"disabled"}>−</button><span class="num">${n}/${max}</span><button aria-label="Add a rank of ${esc(l.Perk)}" data-lg="${i}" data-d="1" ${n>=max||spent>=16?"disabled":""}>+</button></div>`:`<span class="muted" style="font-size:13px">Ranks pending</span>`}</div>`}).join("")}`).join("")}
+  </div>`;
+}
+
 /* --- finish a build that came in from the link (talent and gear strings) once the data file is loaded --- */
 function plRestore(){
   const p=DATA.paths.find(x=>x.name===state.pl.path);
   if(!PL.specs[state.pl.spec]||PL.specs[state.pl.spec].cls!==p.cls)state.pl.spec=plSpecKey(p.cls,"");
-  state.pl.t=plParseTalents(p.cls,state.pl.tStr||"");
+  // Links made before the Forever trees (no version, 15 Sep morning) held Classic talent strings: load the preset instead.
+  state.pl.t=plParseTalents(p.cls,state.pl.ver===PL.treeVer?(state.pl.tStr||""):PL.specs[state.pl.spec].talents);
   const ids=(state.pl.gearStr||"").split(","); state.pl.gear={}; PL_SLOTS.forEach(([n],i)=>{if(ids[i])state.pl.gear[n]=+ids[i]});
-  delete state.pl.tStr; delete state.pl.gearStr;
+  const o=state.pl.opt||""; state.pl.buffs=!/b0/.test(o); state.pl.cons=/c1/.test(o); state.pl.deb=!/d0/.test(o);
+  delete state.pl.tStr; delete state.pl.gearStr; delete state.pl.opt;
+}
+
+/* ---------- DPS estimate (15 Sep 2026) ----------
+   A deterministic expected-value model, not a simulation: white swings through a Classic attack table against a level 63 boss,
+   plus each spec's main abilities at their cooldown or resource rate. Talent numbers are read from the Forever tree text the
+   player has taken (Bloodthirst 35%, Enrage 10%...). Ability base numbers are Classic level-60 ranks until beta tooltips exist.
+   Inputs: S from plStats (stats after gear, talents, racials, Legacy and buffs), the spec, and the talent ranks. */
+const DPS_TARGET={level:63,armor:3731,name:"level 63 raid boss"};
+const DPS_ARMOR_K=400+85*(60+4.5*(60-59)); // Classic armor formula for an attacker at 60
+const DPS_NORM={1:2.4,2:1.7,3:2.4,4:2.4,6:3.3,8:3.3,9:2.4,rng:2.8}; // normalized speeds by weapon type (dagger 1.7, two-hand 3.3)
+function dpsArmorMult(armor){const a=Math.max(0,armor);return 1-a/(a+DPS_ARMOR_K)}
+/* Melee attack table vs a level 63 boss attacked from behind: miss 9% (white dual-wield 28%), dodge 6.5%, glancing 40% of white swings
+   at 65% damage (Classic 300 weapon skill; Forever has removed weapon skill and its replacement is unknown), crit reduced 1.8%. */
+function dpsMeleeTable(S,{white=false,dw=false}={}){
+  const miss=Math.max(0,(white&&dw?28:9)-S.hit)/100, dodge=Math.max(0,6.5-S.lessDodged)/100, glance=white?0.4:0;
+  const crit=Math.max(0,Math.min(S.crit-1.8,100)/100), critC=Math.min(crit,Math.max(0,1-miss-dodge-glance));
+  return {miss,dodge,glance,crit:critC,hit:Math.max(0,1-miss-dodge-glance-critC)};
+}
+const dpsWpn=(w,ap,speed)=>w?(w.min+w.max)/2+ap/14*(speed||w.speed):ap/14*(speed||2); // average damage of one swing or normalized strike
+/* expected damage of one attack given base damage, table, crit multiplier and flat multiplier */
+const dpsEV=(dmg,T,critMult,mult=1)=>dmg*mult*(T.hit+T.crit*critMult+T.glance*0.65);
+function dpsSpellHit(S,school){return Math.min(0.99,(83+S.shit+(S.shitSchool[school]||0))/100)}
+function dpsSpellCrit(S,school){return Math.min(1,Math.max(0,S.scrit+(S.scritSchool[school]||0))/100)}
+function dpsSpellEV(base,coef,S,school,castTime,extraMult=1,critBonus=0){
+  const dmg=(base+coef*(S.spellDmg+(S.school[school]||0)))*(1+(S.schoolPct[school]||0)/100)*(1+S.allDmg/100)*extraMult*(S.deb&&S.debSchool[school]?1.1:1);
+  const hit=dpsSpellHit(S,school), crit=dpsSpellCrit(S,school), cm=1.5+((S.spellCrit[school]||0)+critBonus)/100*0.5;
+  return dmg*hit*(1+crit*(cm-1))/castTime;
+}
+/* ---- the models: each returns [[label, dps], ...] and pushes its assumptions into notes ---- */
+const DPS_MODELS={
+  Fury(S,R,notes){
+    const mh=S.mh, oh=S.oh; if(!mh)return [];
+    const dw=!!oh; const Tw=dpsMeleeTable(S,{white:true,dw}), Ty=dpsMeleeTable(S);
+    const phys=(1+S.allDmg/100)*dpsArmorMult(S.targetArmor);
+    const dwSpec=R.num("Dual Wield Specialization",0)/100, enrage=R.rank("Enrage")?R.num("Enrage",1)/100:0, dwish=R.rank("Death Wish")?0.2*30/180:0;
+    const enrageUp=enrage?0.5:0; if(enrage)notes.push(`Enrage assumed active half the time (it now triggers from any damage taken; a raid DPS warrior is hit less than a leveling one).`);
+    const buff=(1+dwish)*(1+enrage*enrageUp)*(1+(S.twoHand&&mh.h===4?S.twoHand/100:0));
+    const critMult=2, abilCrit=2+S.abilCrit/100;
+    const flurry=R.num("Flurry",0)/100, critAny=Math.min(0.95,Tw.crit); const flurryUp=flurry?1-Math.pow(1-critAny,3):0; const haste=(1+S.haste/100)*(1+flurry*flurryUp);
+    const mhSw=haste/mh.speed, ohSw=dw?haste/oh.speed:0;
+    const mhDmg=dpsWpn(mh,S.ap), ohDmg=dw?dpsWpn(oh,S.ap)*0.5*(1+dwSpec):0;
+    const white=(dpsEV(mhDmg,Tw,critMult,phys*buff)*mhSw+dpsEV(ohDmg,Tw,critMult,phys*buff)*ohSw);
+    // rage: 7.5 rage per 230.6 damage dealt by weapon swings at 60 (Classic), Unbridled Wrath, Anger Management; Bloodthirst and Whirlwind first, Heroic Strike with the rest
+    const landed=Tw.hit+Tw.crit*critMult+Tw.glance*0.65;
+    let rage=(mhDmg*landed*mhSw+ohDmg*landed*ohSw)*phys*7.5/230.6+R.num("Unbridled Wrath",0)/100*(mhSw+ohSw)*(mh.h===4?2:1)+(R.rank("Anger Management")?1/3:0);
+    const parts=[];
+    if(R.rank("Bloodthirst")){const pct=R.num("Bloodthirst",0)/100, flat=R.num("Bloodthirst",1); const bt=dpsEV(S.ap*pct+flat,Ty,abilCrit,phys*buff)/6; parts.push(["Bloodthirst",bt]); rage-=30/6}
+    const ww=dpsEV(dpsWpn(mh,S.ap,DPS_NORM[mh.w]||2.4),Ty,abilCrit,phys*buff)/10+(R.rank("Raging Blows")&&dw?dpsEV(dpsWpn(oh,S.ap,DPS_NORM[oh.w]||2.4)*0.5*(1+dwSpec),Ty,abilCrit,phys*buff)/10:0);
+    parts.push(["Whirlwind",ww]); rage-=25/10;
+    const hsCost=15-R.num("Improved Heroic Strike",0)-R.num("Focused Rage",0); const hsRate=Math.max(0,Math.min(mhSw,rage/hsCost));
+    const hsGain=(dpsEV(mhDmg+138,Ty,abilCrit,phys*buff)-dpsEV(mhDmg,Tw,critMult,phys*buff))*hsRate; parts.push(["Heroic Strike (rage dump)",Math.max(0,hsGain)]);
+    if(R.rank("Deep Wounds")){const rate=(Tw.crit*(mhSw+ohSw)+Ty.crit*(1/6+1/10+hsRate)); const dwDps=R.num("Deep Wounds",0)/100*((mh.min+mh.max)/2)/12*Math.min(1,rate*12)*phys*buff; parts.push(["Deep Wounds",dwDps])}
+    parts.unshift(["White swings",white]);
+    if(R.rank("Weaponmaster")||R.rank("Hack and Slash"))notes.push("Weaponmaster: only the axe crit bonus is counted (in the crit line); the sword extra-attack and mace armor bonuses are not.");
+    notes.push(`Rage model: ${rage.toFixed(1)} rage per second left for Heroic Strike after Bloodthirst and Whirlwind, at ${hsCost} rage each.`);
+    return parts;
+  },
+  Arms(S,R,notes){
+    const mh=S.mh; if(!mh)return [];
+    const Tw=dpsMeleeTable(S,{white:true}), Ty=dpsMeleeTable(S);
+    const phys=(1+S.allDmg/100)*dpsArmorMult(S.targetArmor)*(1+(mh.h===4?S.twoHand:S.oneHand||0)/100);
+    const dwish=R.rank("Death Wish")?0.2*30/180:0, buff=1+dwish, critMult=2, abilCrit=2+S.abilCrit/100;
+    const flurry=R.num("Flurry",0)/100, flurryUp=flurry?1-Math.pow(1-Tw.crit,3):0, haste=(1+S.haste/100)*(1+flurry*flurryUp);
+    const sw=haste/mh.speed, mhDmg=dpsWpn(mh,S.ap);
+    const parts=[["White swings",dpsEV(mhDmg,Tw,critMult,phys*buff)*sw]];
+    let rage=mhDmg*(Tw.hit+Tw.crit*2+Tw.glance*0.65)*sw*phys*7.5/230.6+R.num("Unbridled Wrath",0)/100*sw*(mh.h===4?2:1)+(R.rank("Anger Management")?1/3:0);
+    if(R.rank("Mortal Strike")){parts.push(["Mortal Strike",dpsEV(dpsWpn(mh,S.ap,DPS_NORM[mh.w]||3.3)+R.num("Mortal Strike",0),Ty,abilCrit,phys*buff)/6]); rage-=30/6}
+    parts.push(["Whirlwind",dpsEV(dpsWpn(mh,S.ap,DPS_NORM[mh.w]||3.3),Ty,abilCrit,phys*buff)/10]); rage-=25/10;
+    if(R.rank("Bloodthrill")||true){const opRate=Math.min(1/5,Ty.dodge*sw); if(opRate>0){const opT={...Ty,miss:0,dodge:0}; opT.crit=Math.min(1,Ty.crit+R.num("Improved Overpower",0)/100); opT.hit=Math.max(0,1-opT.crit); parts.push(["Overpower after dodges",dpsEV(dpsWpn(mh,S.ap,DPS_NORM[mh.w]||3.3)+35,opT,abilCrit,phys*buff)*opRate]); rage-=5*opRate}}
+    const hsCost=15-R.num("Improved Heroic Strike",0)-R.num("Focused Rage",0), hsRate=Math.max(0,Math.min(sw,rage/hsCost));
+    parts.push(["Heroic Strike (rage dump)",Math.max(0,(dpsEV(mhDmg+138,Ty,abilCrit,phys*buff)-dpsEV(mhDmg,Tw,critMult,phys*buff))*hsRate)]);
+    if(R.rank("Deep Wounds")){const rate=Tw.crit*sw+Ty.crit*(1/6+1/10+hsRate); parts.push(["Deep Wounds",R.num("Deep Wounds",0)/100*((mh.min+mh.max)/2)/12*Math.min(1,rate*12)*phys*buff])}
+    notes.push(`Rage model: ${rage.toFixed(1)} rage per second left for Heroic Strike after Mortal Strike and Whirlwind.`);
+    if(R.rank("Weaponmaster"))notes.push("Weaponmaster: only the axe crit bonus is counted; the sword extra attack and mace armor bonus are not.");
+    return parts;
+  },
+  _rogue(S,R,notes,builder){
+    const mh=S.mh, oh=S.oh; if(!mh)return [];
+    const dw=!!oh, Tw=dpsMeleeTable(S,{white:true,dw}), Ty=dpsMeleeTable(S);
+    const phys=(1+S.allDmg/100)*dpsArmorMult(S.targetArmor*(1-(R.num("Serrated Blades",0)||0)/100));
+    const critMult=2, lethal=R.num("Lethality",0)/100, abilCrit=2+S.abilCrit/100;
+    const dwSpec=R.num("Dual Wield Specialization",0)/100;
+    const bf=R.rank("Blade Flurry")?0.2*15/120:0, ar=R.rank("Adrenaline Rush")?15/300:0;
+    const snd=R.rank("Improved Slice and Dice")?1+R.num("Improved Slice and Dice",0)/100:1, sndDur=21*snd, sndHaste=0.3;
+    const haste=(1+S.haste/100)*(1+sndHaste)*(1+bf);
+    const mhSw=haste/mh.speed, ohSw=dw?haste/oh.speed:0;
+    const mhDmg=dpsWpn(mh,S.ap), ohDmg=dw?dpsWpn(oh,S.ap)*0.5*(1+dwSpec):0;
+    const parts=[["White swings",dpsEV(mhDmg,Tw,critMult,phys)*mhSw+dpsEV(ohDmg,Tw,critMult,phys)*ohSw]];
+    // poisons: Instant Poison VI on both weapons (Classic 112 to 146), 20% per hit plus Improved Poisons; Vile Poisons adds damage
+    const poisonChance=0.2+R.num("Improved Poisons",0)/100, poisonDmg=129*(1+R.num("Vile Poisons",0)/100)*(1+S.allDmg/100);
+    const landed=Tw.hit+Tw.crit+Tw.glance;
+    let energy=10*(1+ar);
+    const b=builder({Ty,phys,abilCrit,lethal,mhDmg,ohDmg,mh,oh,dwSpec});
+    // energy: builder until 5 combo points, Slice and Dice then Eviscerate; Relentless Strikes and Ruthlessness add a little
+    const cpPer=b.cp*(1+(R.rank("Seal Fate")?R.num("Seal Fate",0)/100*Ty.crit:0))+(b.cpCrit||0)*Ty.crit;
+    const ruth=R.num("Ruthlessness",0)/100, relent=R.rank("Relentless Strikes")?R.num("Relentless Strikes",1)*5*R.num("Relentless Strikes",0)/100:0;
+    const sndRate=1/sndDur; const cpNeed=5-ruth; // combo points a finisher needs after Ruthlessness refunds
+    const finisherCost=25-relent; const sndCost=finisherCost;
+    // per second: x builders give x*cpPer combo points; finishers = x*cpPer/cpNeed; energy: x*cost + finishers*cost = energy
+    const x=(energy-sndRate*sndCost)/(b.cost+cpPer/cpNeed*finisherCost);
+    const finishers=Math.max(0,x*cpPer/cpNeed-sndRate);
+    const evis=(1176+0.15*S.ap)*(1+R.num("Improved Eviscerate",0)/100)*(1+(R.rank("Aggression")?R.num("Aggression",0)/100:0));
+    parts.push([b.name,b.dps(x)]);
+    parts.push(["Eviscerate (5 points)",dpsEV(evis,Ty,abilCrit,phys)*finishers]);
+    const hits=(mhSw+ohSw)*landed+x*b.hitsPer;
+    parts.push(["Instant Poison (both weapons)",poisonDmg*poisonChance*hits*Math.min(0.99,(83+S.shit+S.hit)/100)]);
+    notes.push(`Energy model: ${x.toFixed(2)} ${b.name} and ${finishers.toFixed(2)} Eviscerates per second, Slice and Dice kept up (${sndDur.toFixed(0)}s, +30% attack speed).`);
+    notes.push("Poisons: Instant Poison on both weapons; Deadly Poison, Venom, Rupture and Expose Armor are not modelled.");
+    if(R.rank("Hack and Slash"))notes.push("Hack and Slash: only the dagger and fist crit bonus is counted; sword extra attacks and the mace armor bonus are not.");
+    return parts;
+  },
+  Combat(S,R,notes){return DPS_MODELS._rogue(S,R,notes,({Ty,phys,abilCrit,lethal,mhDmg,mh})=>{
+    const cost=45-R.num("Improved Sinister Strike",0); const dmg=(dpsWpn(mh,S.ap,DPS_NORM[mh.w]||2.4)+68)*(1+R.num("Aggression",0)/100);
+    return {name:"Sinister Strike",cost,cp:1,hitsPer:1,dps:x=>dpsEV(dmg,Ty,abilCrit+lethal,phys)*x}})},
+  Assassination(S,R,notes){return DPS_MODELS._rogue(S,R,notes,({Ty,phys,abilCrit,lethal,mh,oh,dwSpec})=>{
+    if(R.rank("Mutilate")){const pct=R.num("Mutilate",0)/100, flat=R.num("Mutilate",1), bonus=1+R.num("Mutilate",2)/100; const opp=1+R.num("Opportunity",0)/100;
+      const T2={...Ty}; T2.crit=Math.min(1-T2.miss-T2.dodge,Ty.crit+R.num("Puncturing Wounds",1)/100); T2.hit=Math.max(0,1-T2.miss-T2.dodge-T2.crit);
+      const dmg=(dpsWpn(mh,S.ap,DPS_NORM[mh.w]||1.7)*pct+flat)+(oh?(dpsWpn(oh,S.ap,DPS_NORM[oh.w]||1.7)*pct+flat)*(1+dwSpec):0);
+      return {name:"Mutilate",cost:60,cp:2,hitsPer:2,dps:x=>dpsEV(dmg*bonus*opp,T2,abilCrit+lethal,phys)*x}}
+    const T2={...Ty}; T2.crit=Math.min(1-T2.miss-T2.dodge,Ty.crit+R.num("Puncturing Wounds",0)/100); T2.hit=Math.max(0,1-T2.miss-T2.dodge-T2.crit);
+    const dmg=(dpsWpn(mh,S.ap,1.7)*1.5+225)*(1+R.num("Opportunity",0)/100)*(1+R.num("Aggression",0)/100);
+    return {name:"Backstab",cost:60,cp:1,cpCrit:R.num("Puncturing Wounds",2)/100,hitsPer:1,dps:x=>dpsEV(dmg,T2,abilCrit+lethal,phys)*x}})},
+  Subtlety(S,R,notes){return DPS_MODELS._rogue(S,R,notes,({Ty,phys,abilCrit,lethal,mh})=>{
+    if(R.rank("Hemorrhage")){const pct=(mh.w===2?R.num("Hemorrhage",1):R.num("Hemorrhage",0))/100; const dmg=dpsWpn(mh,S.ap,DPS_NORM[mh.w]||2.4)*pct;
+      return {name:"Hemorrhage",cost:35,cp:1,hitsPer:1,dps:x=>dpsEV(dmg,Ty,abilCrit+lethal,phys)*x}}
+    const cost=45-R.num("Improved Sinister Strike",0); const dmg=dpsWpn(mh,S.ap,DPS_NORM[mh.w]||2.4)+68;
+    return {name:"Sinister Strike",cost,cp:1,hitsPer:1,dps:x=>dpsEV(dmg,Ty,abilCrit+lethal,phys)*x}})},
+  "Feral (Cat)"(S,R,notes){
+    // Classic Cat Form: 1.0-second paw, damage from attack power, +160 attack power in form (40 + 2 per level), plus Feral attack power on items.
+    const Sc={...S}; Sc.ap=S.ap+160+S.feralAp+(R.rank("Heart of the Wild")?S.str*R.num("Heart of the Wild",2)/100*2:0); Sc.crit=S.crit+(R.rank("Sharpened Claws")?R.num("Sharpened Claws",0):0);
+    const Tw=dpsMeleeTable(Sc,{white:true}), Ty=dpsMeleeTable(Sc); const phys=(1+S.allDmg/100)*dpsArmorMult(S.targetArmor);
+    const critMult=2, abilCrit=2+S.abilCrit/100; const paw={min:55,max:55,speed:1}; const white=dpsEV(dpsWpn(paw,Sc.ap,1),Tw,critMult,phys)*(1+S.haste/100);
+    const shredCost=60-R.num("Shredding Attacks",0), shred=(dpsWpn(paw,Sc.ap,1)*2.25+180)*(1+R.num("Savage Fury",0)/100);
+    const berserk=R.rank("Berserk")?15/180:0; const Tb={...Ty}; Tb.crit=Math.max(0,1-Tb.miss-Tb.dodge); Tb.hit=0;
+    const cpPer=1+(R.rank("Primal Fury")?Ty.crit:0); const fb=1100+0.15*Sc.ap; // Ferocious Bite rank 5 at 5 points, Classic, provisional
+    const x=10/(shredCost+cpPer/5*35); const bites=x*cpPer/5;
+    const shredDps=(dpsEV(shred,Ty,abilCrit,phys)*(1-berserk)+dpsEV(shred,Tb,abilCrit,phys)*berserk)*x;
+    notes.push(`Energy model: ${x.toFixed(2)} Shreds and ${bites.toFixed(2)} Ferocious Bites per second; Rake, Rip, Tiger's Fury and Berserk's Mangle are not modelled.`);
+    notes.push("Cat Form paw: Classic 1.0-second swing from attack power (+160 in form, base 55). Forever reportedly scales form attacks with weapon damage; not applied until a beta tooltip shows it.");
+    return [["White swings (Cat Form)",white],["Shred",shredDps],["Ferocious Bite (5 points)",dpsEV(fb,Ty,abilCrit,phys)*bites]];
+  },
+  Retribution(S,R,notes){
+    const mh=S.mh; if(!mh)return [];
+    const Tw=dpsMeleeTable(S,{white:true}), Ty=dpsMeleeTable(S);
+    const veng=R.rank("Vengeance")?R.num("Vengeance",0)/100*Math.min(R.num("Vengeance",2)||5,Tw.crit*30/mh.speed):0; if(veng)notes.push(`Vengeance: ${(veng*100).toFixed(0)}% from the stacks kept up by crits.`);
+    const vind=R.rank("Vindication")?R.num("Vindication",1)/100:0; const ap=S.ap*(1+vind);
+    const phys=(1+S.allDmg/100)*(1+veng)*(1+(mh.h===4?S.twoHand:S.oneHand||0)/100); const white=dpsEV(dpsWpn(mh,ap),Tw,2,phys*dpsArmorMult(S.targetArmor))*(1+S.haste/100)/mh.speed;
+    const seals=1+(R.rank("Improved Seals")?R.num("Improved Seals",0)/100:0);
+    const holy=(1+(S.schoolPct.Holy||0)/100)*(1+S.allDmg/100)*(1+veng)*seals*dpsSpellHit(S,"Holy"); const scrit=dpsSpellCrit(S,"Holy"), scm=1.5+(S.spellCrit.Holy||0)/100*0.5;
+    const parts=[["White swings",white]];
+    if(R.rank("Seal of Command")){const pct=R.num("Seal of Command",0)/100; const procs=7*mh.speed/60*(1+S.haste/100)/mh.speed*(Tw.hit+Tw.crit+Tw.glance); parts.push(["Seal of Command procs",dpsWpn(mh,ap)*pct*holy*(1+scrit*(scm-1))*procs]);
+      const jcd=10-R.num("Improved Judgement",0); parts.push(["Judgement of Command",(198+0.43*(S.spellDmg+(S.school.Holy||0)))*holy*(1+scrit*(scm-1))/jcd]); notes.push(`Judgement of Command every ${jcd}s at its Classic rank 5 value (198 plus spell damage). Consecration and Holy Strike are not modelled (mana and unknown Forever numbers).`)}
+    else notes.push("Seal of Command is not taken, so only Judgement of Righteousness-free white damage is counted.");
+    return parts;
+  },
+  Enhancement(S,R,notes){
+    const mh=S.mh; if(!mh)return [];
+    const Tw=dpsMeleeTable(S,{white:true}), Ty=dpsMeleeTable(S); const phys=(1+S.allDmg/100)*dpsArmorMult(S.targetArmor)*(1+(mh.h===4?S.twoHand:S.oneHand||0)/100);
+    const flurry=R.num("Flurry",0)/100, flurryUp=flurry?1-Math.pow(1-Tw.crit,3):0, farseer=R.rank("Rage of the Farseer")?0.3*25/180:0; const haste=(1+S.haste/100)*(1+flurry*flurryUp)*(1+farseer);
+    const sw=haste/mh.speed, mhDmg=dpsWpn(mh,S.ap);
+    const parts=[["White swings",dpsEV(mhDmg,Tw,2,phys)*sw]];
+    const wfAp=315*(1+R.num("Elemental Weapons",1)/100); const wfRate=0.2*sw*(Tw.hit+Tw.crit+Tw.glance); parts.push(["Windfury Weapon extra attacks",dpsEV(dpsWpn(mh,S.ap+wfAp),Ty,2,phys)*wfRate]);
+    if(R.rank("Stormstrike"))parts.push(["Stormstrike",dpsEV(mhDmg,Ty,2+S.abilCrit/100,phys)/8]);
+    const nature=(1+(S.schoolPct.Nature||0)/100)*(1+S.allDmg/100)*(R.rank("Stormstrike")?1+R.num("Stormstrike",0)/100:1)*(1+R.num("Concussion",0)/100)*dpsSpellHit(S,"Nature"); const scrit=dpsSpellCrit(S,"Nature"), scm=1.5+(S.spellCrit.Nature||0)/100*0.5;
+    parts.push(["Earth Shock every 8 s",(531+0.386*(S.spellDmg+(S.school.Nature||0)))*nature*(1+scrit*(scm-1))/8]);
+    notes.push("Windfury Weapon rank 4 (+315 attack power, one extra attack, 20% per hit); Earth Shock rank 7 every 8 seconds, which needs more mana than a long fight allows. Lightning Shield and Maelstrom Weapon are not modelled.");
+    return parts;
+  },
+  Marksmanship(S,R,notes){
+    const rw=S.rng; if(!rw)return [];
+    const Tw=dpsMeleeTable(S,{white:true}); Tw.glance=0; Tw.hit=Math.max(0,1-Tw.miss-Tw.crit); Tw.dodge=0; // ranged attacks cannot be dodged or glance
+    const Ty={...Tw};
+    const lone=R.rank("Lone Wolf")?1+R.num("Lone Wolf",0)/100:1; if(lone>1)notes.push("Lone Wolf: no pet, +20% damage. Pet damage is never included in this estimate.");else notes.push("Pet damage is not included (a Classic pet adds roughly 10 to 20%).");
+    const phys=(1+S.allDmg/100)*(1+S.ranged/100)*lone*dpsArmorMult(S.targetArmor); const rap=S.rap;
+    const speed=rw.speed/1.15; // Classic quiver haste
+    const auto=dpsWpn(rw,rap,rw.speed), abilCrit=2+S.rangedAbilCrit/100;
+    const parts=[["Auto Shot",dpsEV(auto,Tw,2,phys)*(1+S.haste/100)/speed]];
+    const barrage=1+R.num("Barrage",0)/100;
+    parts.push(["Aimed Shot every 6 s",dpsEV((auto+600)*barrage,Ty,abilCrit,phys)/6]);
+    parts.push(["Multi-Shot every 10 s",dpsEV((auto+150)*barrage,Ty,abilCrit,phys)/10]);
+    notes.push("Auto Shot keeps its timer through Aimed Shot casts (delayed, not lost). Serpent Sting, Arcane Shot and Hawks are not modelled. Ranged attack power includes Hunter's Mark when boss debuffs are on.");
+    return parts;
+  },
+  Fire(S,R,notes){
+    const cast=Math.max(1.5,3.5-R.num("Improved Fireball",0)); const scorch=R.rank("Improved Scorch")?1+R.num("Improved Scorch",1)*R.num("Improved Scorch",3)/100:1; // "3% ... stacking up to 5 times"
+    const ignite=R.rank("Ignite")?R.num("Ignite",0)/100:0; const critBonus=ignite*100; // Ignite: 40% of the crit's damage over 4 s, counted as crit bonus
+    notes.push(`Fireball rank 12 (596 to 760, ${cast}s cast, full spell damage); its 8-second burn and Fire Blast are not counted.${scorch>1?" Improved Scorch kept at 5 stacks.":""}`);
+    return [["Fireball",dpsSpellEV(678,1,S,"Fire",cast,scorch,critBonus)]];
+  },
+  Frost(S,R,notes){
+    const cast=Math.max(1.5,3-R.num("Improved Frostbolt",0)); const wc=R.rank("Winter's Chill")?R.num("Winter's Chill",1)*5:0; const S2={...S,scritSchool:{...S.scritSchool,Frost:(S.scritSchool.Frost||0)+wc}};
+    notes.push(`Frostbolt rank 11 (515 to 556, ${cast}s cast, 0.857 spell damage coefficient).${wc?" Winter's Chill kept at 5 stacks (+"+wc+"% crit).":""} Frozen-target Shatter crits are not counted.`);
+    return [["Frostbolt",dpsSpellEV(535.5,0.857,S2,"Frost",cast)]];
+  },
+  Shadow(S,R,notes){
+    const sw=R.rank("Shadow Weaving")?R.num("Shadow Weaving",1)*5:0, form=R.rank("Shadowform")?R.num("Shadowform",0):0;
+    const S2={...S,schoolPct:{...S.schoolPct,Shadow:(S.schoolPct.Shadow||0)+sw+form}};
+    const mbCd=8-R.num("Improved Mind Blast",0); const mf=R.rank("Mind Flay")?1+R.num("Improved Mind Flay",0)/100:0;
+    const parts=[["Shadow Word: Pain",dpsSpellEV(1236,1,S2,"Shadow",18)*dpsSpellHit(S,"Shadow")/dpsSpellHit(S,"Shadow")]];
+    const mbTime=1.5/mbCd; parts.push([`Mind Blast every ${mbCd}s`,dpsSpellEV(517,0.4286,S2,"Shadow",mbCd)]);
+    if(mf)parts.push(["Mind Flay filler",dpsSpellEV(426,0.45,S2,"Shadow",3,mf)*(1-mbTime-1.5/18)]); else parts.push(["Smite filler",dpsSpellEV(437,0.714,S2,"Holy",2.5)*(1-mbTime-1.5/18)]);
+    notes.push(`Shadow Word: Pain rank 8 kept up, Mind Blast rank 9 every ${mbCd}s, ${mf?"Mind Flay rank 6":"Smite"} the rest of the time. Dots cannot crit.${sw?" Shadow Weaving at 5 stacks.":""}${form?" Shadowform +"+form+"%.":""}`);
+    return parts;
+  },
+  Destruction(S,R,notes){
+    const cast=Math.max(1.5,3-R.num("Bane",0)); const isb=R.rank("Improved Shadow Bolt")?R.num("Improved Shadow Bolt",0)/100:0;
+    const crit=dpsSpellCrit(S,"Shadow"); const isbUp=isb?1-Math.pow(1-crit,12/cast):0;
+    notes.push(`Shadow Bolt rank 10 (482 to 538, ${cast}s cast, 0.857 coefficient).${isb?` Improved Shadow Bolt up ${(isbUp*100).toFixed(0)}% of the time from your own crits.`:""} Immolate, Conflagrate and Shadowburn are not counted.`);
+    return [["Shadow Bolt",dpsSpellEV(510,0.857,S,"Shadow",cast,1+isb*isbUp)]];
+  },
+  Affliction(S,R,notes){
+    const cast=Math.max(1.5,3-R.num("Bane",0)); const corr=1+R.num("Improved Corruption",1)/100;
+    const parts=[["Corruption",dpsSpellEV(822,1,S,"Shadow",18,corr)],["Curse of Agony",dpsSpellEV(1092,1.2,S,"Shadow",24)]];
+    parts.push(["Shadow Bolt filler",dpsSpellEV(510,0.857,S,"Shadow",cast)*(1-1.5/18-1.5/24)]);
+    notes.push(`Corruption rank 7 and Curse of Agony rank 6 kept up (dots cannot crit), Shadow Bolt rank 10 the rest of the time. Siphon Life and Drain Life are not counted.`);
+    return parts;
+  },
+  Balance(S,R,notes){
+    const cast=Math.max(1.5,3.5-R.num("Improved Starfire",0)); const mf=1+R.num("Improved Moonfire",0)/100;
+    const parts=[["Starfire",dpsSpellEV(482.5,1,S,"Arcane",cast)*(1-1.5/12)],["Moonfire every 12 s",(dpsSpellEV(200,0.15,S,"Arcane",12,mf)+dpsSpellEV(384,0.52,S,"Arcane",12,mf))]];
+    notes.push(`Starfire rank 6 (445 to 520, ${cast}s cast), Moonfire rank 10 kept up. Insect Swarm, Wrath and Eclipse are not counted.`);
+    return parts;
+  },
+  Elemental(S,R,notes){
+    const cast=Math.max(1.5,3-R.num("Elemental Alacrity",0)), clCast=Math.max(1.5,2.5-R.num("Elemental Alacrity",0)); const conc=1+R.num("Concussion",0)/100; const overload=1+R.num("Lightning Overload",0)/100*0.5;
+    const S2={...S,scritSchool:{...S.scritSchool,Nature:(S.scritSchool.Nature||0)+R.num("Call of Thunder",0)}};
+    const parts=[[`Chain Lightning every 6 s`,dpsSpellEV(786,0.714,S2,"Nature",6,conc*overload)],["Lightning Bolt",dpsSpellEV(443,0.857,S2,"Nature",cast,conc*overload)*(1-clCast/6)]];
+    notes.push(`Lightning Bolt rank 10 (${cast}s cast) with Chain Lightning rank 4 every 6 seconds; mana is assumed to last. Lava Burst and shocks are not counted (Forever numbers at 60 unknown).`);
+    return parts;
+  },
+};
+const DPS_NO_MODEL={"Protection":"tank","Protection (Paladin)":"tank","Guardian (Bear)":"tank","Holy (Paladin)":"healer","Holy (Priest)":"healer","Discipline":"healer","Restoration (Shaman)":"healer","Restoration (Druid)":"healer"};
+/* rank and rank-text number helpers over the current talent state */
+function plRanks(cls){
+  const sorted=plSorted(cls), byName={};
+  sorted.forEach((tl,ti)=>tl.forEach((t,i)=>{byName[t.n]={t,pts:state.pl.t[ti][i]}}));
+  const rank=n=>byName[n]?byName[n].pts:0;
+  const num=(n,i)=>{const e=byName[n]; if(!e||!e.pts)return 0; const nums=(e.t.d[e.pts-1].match(/-?\d+(?:\.\d+)?/g)||[]).map(Number); return nums[i]||0};
+  return {rank,num,byName};
+}
+function plDpsEstimate(p,spec,S){
+  const key=spec.replace(/ \((Warrior|Paladin|Hunter|Rogue|Priest|Shaman|Mage|Warlock|Druid)\)$/,"");
+  if(DPS_NO_MODEL[spec])return {none:DPS_NO_MODEL[spec]};
+  const model=DPS_MODELS[key]||DPS_MODELS[spec]; if(!model)return {none:"unknown"};
+  const notes=[], R=plRanks(p.cls);
+  const parts=model(S,R,notes).map(([n,v])=>[n,Math.max(0,v||0)]);
+  const total=parts.reduce((a,[,v])=>a+v,0);
+  return {total,parts,notes};
 }
 
 $("#dataDate").textContent=DATA.asOf;
