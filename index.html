@@ -597,7 +597,12 @@ function plLevelingPreset(cls,full,max){
         res[ti][i]++; total++}}}
   return res;
 }
-function plPreset(cls,spec){const full=plParseTalents(cls,PL.specs[spec].talents), max=plMaxPts(); return max>=51?full:plLevelingPreset(cls,full,max)}
+/* The suggested build for the phase: the 60 build at 51 points; at a beta cap the points chosen by this page's damage estimate
+   (sp.lvl, from forever/leveling.json via tests/leveling_builds.js, 16 Sep 2026: the row-by-row cut filled Lightning Reflexes and
+   Deflection before the damage talents and lost to a hand build); the row-by-row cut for specs with no damage model. */
+function plPreset(cls,spec){const sp=PL.specs[spec], full=plParseTalents(cls,sp.talents), max=plMaxPts(); if(max>=51)return full;
+  const k=Object.keys(PL.phases).find(x=>PL.phases[x].pts===max); if(k&&sp.lvl&&sp.lvl[k])return plLegalTalents(cls,plParseTalents(cls,sp.lvl[k]));
+  return plLevelingPreset(cls,full,max)}
 /* Plan a path on the right. Called when a row is selected (userPick: scroll the planner into view on a narrow screen) and whenever
    the choices change (the planner follows the list). The build is only reset when the path or the spec for the role changes. */
 function plOpen(pathName,specName,userPick){
@@ -821,7 +826,7 @@ function renderPlanner(){
     <div><div class="label">Spec</div><div class="chips">${specs.map(k=>`<button class="chip" data-spec="${esc(k)}" aria-pressed="${k===spec}">${esc(k.replace(/ \(.*\)$/,""))}</button>`).join("")}</div></div>
     <div class="pl-actions"><button class="btn small" id="plPreset" ${sp.talents?"":"disabled"}>Load suggested talents</button><button class="btn small" id="plClearT">Clear talents</button><button class="btn small" id="plAuto">Suggest starter gear</button>${plPhase().raid?`<span class="muted" style="font-size:13px">raid tier included</span>`:`<label><input type="checkbox" id="plRaid" ${state.pl.raid?"checked":""}> include raid-tier items</label>`}<label><input type="checkbox" id="plPvp" ${state.pl.pvp?"checked":""}> include PvP rank rewards</label><button class="btn small" id="plLink">Copy link to this build</button></div>
     <details class="pl-about"><summary>Where these suggestions come from, and what the marks mean</summary>
-      <p>${esc(PL.credit)} ${sp.talents?"The suggested talents are this page's own first build on the Forever trees, written from the talent text before anyone has played it; no guide has published Forever builds yet.":"No suggested build for this spec yet; place the points yourself."}</p>
+      <p>${esc(PL.credit)} ${sp.talents?(plMaxPts()<51&&sp.lvl&&Object.keys(PL.phases).some(x=>PL.phases[x].pts===plMaxPts()&&sp.lvl[x])?`The suggested talents for level ${plLevel()} are the ${plMaxPts()} points that raise this page's damage estimate most (chosen by the estimate itself with starter gear on a Horde character), so a talent the estimate does not model yet is not picked.`:"The suggested talents are this page's own first build on the Forever trees, written from the talent text before anyone has played it; no guide has published Forever builds yet."):"No suggested build for this spec yet; place the points yourself."}</p>
       <p>Starter gear is picked by this page's own stat weights from Classic ${plPhase().raid?"dungeon, quest, crafted, vendor, world and raid-tier items":`dungeon, quest, crafted, vendor and world items up to item level ${plPhase().ilvl}${state.pl.raid?", plus raid-tier items":""}`}${state.pl.pvp?", plus PvP rank rewards":""}, with hit valued only up to its cap and weapon damage only for specs that swing. Forever's new dungeons and reworked loot are not in any database yet. Hover a talent for its text, and an item for its Wowhead Forever tooltip. Click a choice icon to use that item; the item name opens Wowhead's Forever database, which will refresh from the beta and launch clients.</p>
       <p><b class="fx fx-new">N</b> marks a talent that is new in Forever. <b class="fx">F</b> marks one with a reported change, listed under “What Forever changes”. Every change you make here saves in the page link.</p>
     </details>
