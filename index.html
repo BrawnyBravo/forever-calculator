@@ -58,9 +58,10 @@ h3{font-family:var(--display);font-weight:400;font-size:17px;margin:0;color:var(
 #choices{grid-area:choices} #planner{grid-area:planner;min-width:0}
 .side{grid-area:side;display:grid;gap:var(--s3);position:sticky;top:var(--s2);max-height:calc(100vh - 16px);overflow:auto;scrollbar-width:thin;padding-right:2px}
 @media (max-width:900px){.main{grid-template-columns:1fr;grid-template-rows:auto;grid-template-areas:"choices" "side" "planner"}.side{position:static;max-height:none;overflow:visible}}
-.choices{padding:var(--s2) var(--s3);display:flex;flex-wrap:wrap;gap:6px var(--s4);align-items:center}
-.ch-head{display:flex;align-items:center;gap:var(--s2);min-height:22px;margin-left:auto} .ch-head .btn{min-height:22px;padding:0 6px;font-size:12.5px}
-.choice{display:flex;flex-wrap:wrap;align-items:center;gap:3px 6px} .choice .label{margin-right:2px}
+.choices{padding:var(--s2) var(--s4);display:grid;grid-template-columns:max-content minmax(0,1fr) max-content minmax(0,1fr);gap:7px var(--s3);align-items:center}
+.ch-head{display:flex;align-items:center;gap:var(--s2);min-height:22px;grid-column:3/-1;justify-self:end} .ch-head .btn{min-height:22px;padding:0 6px;font-size:12.5px}
+.choice{display:contents} .choice .label{text-align:right;white-space:nowrap} .choice[data-k="cls"] .chips,.choice[data-k="race"] .chips{grid-column:2/-1}
+@media (max-width:900px){.choices{grid-template-columns:1fr;gap:6px}.choice{display:grid;gap:2px}.choice .label{text-align:left}.choice[data-k="cls"] .chips,.choice[data-k="race"] .chips{grid-column:auto}.ch-head{grid-column:auto}}
 .chips{display:flex;flex-wrap:wrap;gap:3px}
 .chip{border:1px solid var(--frame);background:#0c1120;border-radius:3px;padding:2px 8px;font-size:13px;cursor:pointer;color:var(--ink-2);line-height:1.4;min-height:24px}
 .chip:hover{border-color:var(--frame-hi);color:var(--ink)}
@@ -379,7 +380,7 @@ const specFor=(p,I)=>{const s=DATA.specs.find(x=>x.Class===p.cls);const r=s&&s[I
 function renderChoices(){
   const el=$("#choices");
   // Every choice group stays visible at every width (owner decision, 15 Sep 2026 about 9:45 PM: the choices are never folded away).
-  el.innerHTML=Object.entries(OPTS).map(([k,o])=>`<div class="choice"><div class="label" id="lab-${k}">${o.label}</div><div class="chips" role="group" aria-labelledby="lab-${k}">${o.v.map(v=>`<button class="chip" id="opt-${k}-${esc(v).replace(/\W/g,"")}" data-k="${k}" data-v="${esc(v)}" aria-pressed="${state.I[k]===v}">${esc(v)}</button>`).join("")}</div></div>`).join("")+
+  el.innerHTML=Object.entries(OPTS).map(([k,o])=>`<div class="choice" data-k="${k}"><div class="label" id="lab-${k}">${o.label}</div><div class="chips" role="group" aria-labelledby="lab-${k}">${o.v.map(v=>`<button class="chip" id="opt-${k}-${esc(v).replace(/\W/g,"")}" data-k="${k}" data-v="${esc(v)}" aria-pressed="${state.I[k]===v}">${esc(v)}</button>`).join("")}</div></div>`).join("")+
     `<div class="ch-head"><button class="btn small quiet" id="resetChoices">Reset</button></div>`;
   el.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{state.I[b.dataset.k]=b.dataset.v;state.open=null;writeHash();renderChoices();renderFind();syncPlanner()});
   $("#resetChoices").onclick=()=>{state.I={...DEFAULTS};state.open=null;state.pinned=null;state.expand={};writeHash();renderChoices();renderFind();syncPlanner()};
