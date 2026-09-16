@@ -54,12 +54,13 @@ h3{font-family:var(--display);font-weight:400;font-size:17px;margin:0;color:var(
 [hidden]{display:none!important}
 
 /* ---- One screen: side column + planner ---- */
-.main{display:grid;grid-template-columns:minmax(280px,320px) minmax(0,1fr);gap:var(--s4);align-items:start}
-.side{display:grid;gap:var(--s3);position:sticky;top:var(--s2);max-height:calc(100vh - 16px);overflow:auto;scrollbar-width:thin;padding-right:2px}
-@media (max-width:900px){.main{grid-template-columns:1fr}.side{position:static;max-height:none;overflow:visible}}
-.choices{padding:var(--s2) var(--s3);display:grid;gap:4px}
-.ch-head{display:flex;justify-content:space-between;align-items:center;gap:var(--s2);min-height:22px} .ch-head .btn{min-height:22px;padding:0 6px;font-size:12.5px}
-.choice{display:grid;gap:2px}
+.main{display:grid;grid-template-columns:minmax(280px,320px) minmax(0,1fr);grid-template-rows:auto 1fr;grid-template-areas:"side choices" "side planner";gap:var(--s4);align-items:start}
+#choices{grid-area:choices} #planner{grid-area:planner;min-width:0}
+.side{grid-area:side;display:grid;gap:var(--s3);position:sticky;top:var(--s2);max-height:calc(100vh - 16px);overflow:auto;scrollbar-width:thin;padding-right:2px}
+@media (max-width:900px){.main{grid-template-columns:1fr;grid-template-rows:auto;grid-template-areas:"choices" "side" "planner"}.side{position:static;max-height:none;overflow:visible}}
+.choices{padding:var(--s2) var(--s3);display:flex;flex-wrap:wrap;gap:6px var(--s4);align-items:center}
+.ch-head{display:flex;align-items:center;gap:var(--s2);min-height:22px;margin-left:auto} .ch-head .btn{min-height:22px;padding:0 6px;font-size:12.5px}
+.choice{display:flex;flex-wrap:wrap;align-items:center;gap:3px 6px} .choice .label{margin-right:2px}
 .chips{display:flex;flex-wrap:wrap;gap:3px}
 .chip{border:1px solid var(--frame);background:#0c1120;border-radius:3px;padding:2px 8px;font-size:13px;cursor:pointer;color:var(--ink-2);line-height:1.4;min-height:24px}
 .chip:hover{border-color:var(--frame-hi);color:var(--ink)}
@@ -214,13 +215,13 @@ details.char summary::-webkit-details-marker{display:none}
 
 <div class="wrap">
 <header class="top">
-  <h1>Forever Class &amp; Race Planner<small>Pick what you enjoy on the left. The list re-ranks, and the planner on the right follows the path you select.</small></h1>
+  <h1>Forever Class &amp; Race Planner<small>Pick what you enjoy above the planner. The list on the left re-ranks, and the planner follows the path you select.</small></h1>
   <div class="stamp">Data as of <b id="dataDate"></b><br>Beta opens 17 Sep · Launch 4 Nov · Raids 9 Dec</div>
 </header>
 
 <div class="main">
-  <aside class="side" aria-label="Your choices and the ranked paths">
-    <div class="choices tip" id="choices"></div>
+  <div class="choices tip" id="choices" aria-label="Your choices"></div>
+  <aside class="side" aria-label="The ranked paths">
     <div class="ranked tip">
       <div class="results-head">
         <div><h2 id="resTitle">Best fits</h2><p class="lede" id="resSub"></p></div>
@@ -378,9 +379,8 @@ const specFor=(p,I)=>{const s=DATA.specs.find(x=>x.Class===p.cls);const r=s&&s[I
 function renderChoices(){
   const el=$("#choices");
   // Every choice group stays visible at every width (owner decision, 15 Sep 2026 about 9:45 PM: the choices are never folded away).
-  el.innerHTML=`<div class="ch-head"><div class="label" style="color:var(--gold-soft)">Your choices</div><button class="btn small quiet" id="resetChoices">Reset</button></div>`+
-    Object.entries(OPTS).map(([k,o])=>`<div class="choice"><div class="label" id="lab-${k}">${o.label}</div><div class="chips" role="group" aria-labelledby="lab-${k}">${o.v.map(v=>`<button class="chip" id="opt-${k}-${esc(v).replace(/\W/g,"")}" data-k="${k}" data-v="${esc(v)}" aria-pressed="${state.I[k]===v}">${esc(v)}</button>`).join("")}</div></div>`).join("")+
-    "";
+  el.innerHTML=Object.entries(OPTS).map(([k,o])=>`<div class="choice"><div class="label" id="lab-${k}">${o.label}</div><div class="chips" role="group" aria-labelledby="lab-${k}">${o.v.map(v=>`<button class="chip" id="opt-${k}-${esc(v).replace(/\W/g,"")}" data-k="${k}" data-v="${esc(v)}" aria-pressed="${state.I[k]===v}">${esc(v)}</button>`).join("")}</div></div>`).join("")+
+    `<div class="ch-head"><button class="btn small quiet" id="resetChoices">Reset</button></div>`;
   el.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{state.I[b.dataset.k]=b.dataset.v;state.open=null;writeHash();renderChoices();renderFind();syncPlanner()});
   $("#resetChoices").onclick=()=>{state.I={...DEFAULTS};state.open=null;state.pinned=null;state.expand={};writeHash();renderChoices();renderFind();syncPlanner()};
 }
