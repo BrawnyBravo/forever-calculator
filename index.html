@@ -708,7 +708,8 @@ function plOneWeaponSet(){
 const plEnch=id=>PL.enchants.find(e=>e.id===id);
 function plEnchCandidates(slotName,it,p){
   if(!it)return []; const key=PL_SLOTS.find(s=>s[0]===slotName)[1];
-  return PL.enchants.filter(e=>{ if(e.c&&!e.c.includes(PL_CLASS_ID[p.cls]))return false;
+  const ph=plPhase(); // 16 Sep 2026: only what someone can have at the phase's level (maker's skill, item's level)
+  return PL.enchants.filter(e=>{ if(e.c&&!e.c.includes(PL_CLASS_ID[p.cls]))return false; if((e.sk||0)>ph.skill||(e.lv||0)>ph.level)return false;
     if(key==="mh"||key==="oh"){ if(it.w===7)return e.t===13&&e.et===2; if(it.w===5)return false; if(e.t!==13||e.et===2)return false; if(e.et===1)return it.h===4; if(e.et===4)return it.w===8; return true }
     if(key==="rng")return e.t===14&&[1,2,3].includes(it.r);
     return e.t===it.t||(e.x&&e.x.includes(it.t)) });
@@ -816,7 +817,7 @@ function renderPlanner(){
   el.innerHTML=`
   <div class="pl-head tip">
     <div><div class="label">Planning</div><h2 style="margin:0;color:${TEXT_COLOR[p.cls]}">${esc(displayName(p))}</h2><div class="muted" style="font-size:14px"><span class="fac-${esc(p.faction)}">${esc(p.faction)}</span> · ${esc(p.roles)} · fit <b class="num" style="color:${tierColor(fitScore(p,state.I))}">${fitScore(p,state.I)}</b></div></div>
-    <div><div class="label">Phase</div><div class="chips">${Object.entries(PL.phases).map(([k,ph])=>`<button class="chip" data-phase="${k}" aria-pressed="${k===state.pl.phase}" title="${esc(ph.level<60?`Level ${ph.level}: ${ph.pts} talent points, items up to item level ${ph.ilvl}`:ph.raid?"Level 60 with the raid tier (Classic Molten Core and Onyxia items stand in for the Forever raids)":"Level 60, dungeon, quest, crafted and world items")}">${esc(ph.label)}</button>`).join("")}</div></div>
+    <div><div class="label">Phase</div><div class="chips">${Object.entries(PL.phases).map(([k,ph])=>`<button class="chip" data-phase="${k}" aria-pressed="${k===state.pl.phase}" title="${esc(ph.level<60?`Level ${ph.level}: ${ph.pts} talent points, items up to item level ${ph.ilvl}, enchants up to profession skill ${ph.skill}`:ph.raid?"Level 60 with the raid tier (Classic Molten Core and Onyxia items stand in for the Forever raids)":"Level 60, dungeon, quest, crafted and world items")}">${esc(ph.label)}</button>`).join("")}</div></div>
     <div><div class="label">Spec</div><div class="chips">${specs.map(k=>`<button class="chip" data-spec="${esc(k)}" aria-pressed="${k===spec}">${esc(k.replace(/ \(.*\)$/,""))}</button>`).join("")}</div></div>
     <div class="pl-actions"><button class="btn small" id="plPreset" ${sp.talents?"":"disabled"}>Load suggested talents</button><button class="btn small" id="plClearT">Clear talents</button><button class="btn small" id="plAuto">Suggest starter gear</button>${plPhase().raid?`<span class="muted" style="font-size:13px">raid tier included</span>`:`<label><input type="checkbox" id="plRaid" ${state.pl.raid?"checked":""}> include raid-tier items</label>`}<label><input type="checkbox" id="plPvp" ${state.pl.pvp?"checked":""}> include PvP rank rewards</label><button class="btn small" id="plLink">Copy link to this build</button></div>
     <details class="pl-about"><summary>Where these suggestions come from, and what the marks mean</summary>
@@ -979,7 +980,7 @@ function plRestore(){
   if(!PL.phases[state.pl.phase])state.pl.phase="l60";
   state.pl.t=state.pl.ver===PL.treeVer?plLegalTalents(p.cls,plParseTalents(p.cls,state.pl.tStr||"")):plPreset(p.cls,state.pl.spec);
   const ids=(state.pl.gearStr||"").split(","); state.pl.gear={}; PL_SLOTS.forEach(([n],i)=>{if(ids[i]&&plItem(+ids[i]))state.pl.gear[n]=+ids[i]});
-  const eids=(state.pl.enchStr||"").split(","); state.pl.ench={}; PL_SLOTS.forEach(([n],i)=>{if(eids[i]&&state.pl.gear[n])state.pl.ench[n]=+eids[i]}); delete state.pl.enchStr;
+  const eids=(state.pl.enchStr||"").split(","); state.pl.ench={}; PL_SLOTS.forEach(([n],i)=>{if(eids[i]&&state.pl.gear[n]&&plEnchCandidates(n,plItem(state.pl.gear[n]),p).some(e=>e.id===+eids[i]))state.pl.ench[n]=+eids[i]}); delete state.pl.enchStr;
   state.plPick=null; plOneWeaponSet();
   state.pinned=state.pl.path; // the linked build stays until the visitor picks another row (16 Sep 2026: the first choice click used to replace it)
   if(!PL.phases[state.pl.phase])state.pl.phase="l60";
