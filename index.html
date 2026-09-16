@@ -302,9 +302,15 @@ const DATA = {"paths": [{"name": "Human Warrior", "faction": "Alliance", "race":
 function avg(...a){return a.reduce((s,x)=>s+x,0)/a.length}
 function round1(x){return Math.round((x+1e-9)*10)/10}
 const PART_META=[["goal","What you want to do","#c9a74a"],["role","Role match","#d2453a"],["exp","Experience","#4a7fe0"],["racefit","Race fit","#1fae8a"],["flex","Flexibility","#e07a2e"],["prof","Professions","#8a93a6"]];
+// PvE output weight (owner, 16 Sep 2026 about 4:50 PM: raid output is "a huge factor, not outright but heavy weight in the scale"): for PvE and
+// Balanced the goal is 50%, taken from role match. With a role chosen the list only shows classes that fill it, so role match is 100 on every
+// listed row and moving its weight changes nothing else; with Role Any it is the generic solo/raid/PvP average. Experience (13%) and race fit (10%)
+// still break close calls. Before: goal 42%, role 30% (role chosen) or 20% (Any), which let Returning's experience edge put Elemental 538
+// above Affliction 567 for Horde ranged.
 function weights(I){
-  if(I.role==="Any") return I.goal==="Gold farmer" ? {goal:.52,role:.20,exp:.13,racefit:.10,flex:0,prof:.05} : {goal:.42,role:.20,exp:.13,racefit:.10,flex:.10,prof:.05};
-  return {goal:.42,role:.30,exp:.13,racefit:.10,flex:0,prof:.05};
+  const pve=I.goal==="PvE"||I.goal==="Balanced";
+  if(I.role==="Any") return I.goal==="Gold farmer" ? {goal:.52,role:.20,exp:.13,racefit:.10,flex:0,prof:.05} : pve ? {goal:.50,role:.12,exp:.13,racefit:.10,flex:.10,prof:.05} : {goal:.42,role:.20,exp:.13,racefit:.10,flex:.10,prof:.05};
+  return pve ? {goal:.50,role:.22,exp:.13,racefit:.10,flex:0,prof:.05} : {goal:.42,role:.30,exp:.13,racefit:.10,flex:0,prof:.05};
 }
 /* Raid damage (16 Sep 2026, asked for: the PvE list must show who does the most damage in a raid). For PvE and Balanced with a damage role,
    the raid rating is the planner's own estimate for the class's PvE spec in that role (starter gear at level 60, raid buffs and boss debuffs,
