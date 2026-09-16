@@ -2,138 +2,125 @@
 <html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Forever Class &amp; Race Calculator</title>
+<title>Forever Class &amp; Race Planner</title>
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus+SC&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Spline+Sans+Mono:wght@400;600&display=swap">
 <style>
-/* One visual world on purpose: the in-game tooltip. Single dark theme, every colour painted explicitly. */
+/* One visual world on purpose: the in-game tooltip. Single dark theme, every colour painted explicitly.
+   One screen since 15 Sep 2026: choices and the ranked list on the left, the planner for the selected path on the right. */
 :root{
   --night:#0a0d14; --panel:#111726; --panel-2:#171f33; --frame:#2a3450; --frame-hi:#46547a;
-  --ink:#e9e4d6; --ink-2:#aab1c2; --ink-3:#737c91;
-  --gold:#ffd100; --gold-soft:#c9a74a; --uncommon:#1eff00; --horde:#d2453a; --alliance:#4a7fe0;
+  --ink:#e9e4d6; --ink-2:#aab1c2; --ink-3:#8791a6;
+  --gold:#ffd100; --gold-soft:#c9a74a; --uncommon:#1eff00; --horde:#e0554a; --alliance:#5b8ff0;
   --t-grey:#9d9d9d; --t-green:#1eff00; --t-blue:#2f8cff; --t-purple:#b048f8; --t-orange:#ff8000; --t-gold:#e5cc80;
   --display:"Marcellus SC","Friz Quadrata","Trajan Pro",Georgia,serif;
   --body:"Alegreya Sans","Segoe UI",system-ui,sans-serif;
   --mono:"Spline Sans Mono",ui-monospace,Consolas,monospace;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
 html,body{background:var(--night);color:var(--ink)}
-body{font-family:var(--body);font-size:16px;line-height:1.5;padding-inline:clamp(16px,3vw,40px);padding-block:0 64px;
+body{font-family:var(--body);font-size:16px;line-height:1.5;padding-inline:clamp(16px,2.5vw,32px);padding-block:0 64px;margin:0;
   background-image:radial-gradient(1200px 500px at 70% -200px,#17213a 0%,transparent 70%);background-repeat:no-repeat}
 a{color:var(--gold-soft)} a:hover{color:var(--gold)}
 button,select,input,textarea{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-.wrap{max-width:1240px;margin-inline:auto}
-header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;padding-block:28px 14px;border-bottom:1px solid var(--frame)}
-h1{font-family:var(--display);font-weight:400;font-size:clamp(26px,3.4vw,38px);line-height:1.05;margin:0;color:var(--gold);letter-spacing:.01em;text-wrap:balance}
+.wrap{max-width:1440px;margin-inline:auto}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:var(--s3) var(--s5);padding-block:22px var(--s3);border-bottom:1px solid var(--frame);margin-bottom:var(--s4)}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(24px,3vw,34px);line-height:1.05;margin:0;color:var(--gold);letter-spacing:.01em;text-wrap:balance}
 h1 small{display:block;font-family:var(--body);font-size:15px;color:var(--ink-2);letter-spacing:0;margin-top:6px}
-.stamp{font-family:var(--mono);font-size:12px;color:var(--ink-3);text-align:right}
+.stamp{font-family:var(--mono);font-size:12px;color:var(--ink-3);text-align:right;line-height:1.6}
 .stamp b{color:var(--ink-2);font-weight:600}
-nav.tabs{display:flex;gap:4px;overflow-x:auto;padding-block:10px;scrollbar-width:thin}
-nav.tabs button{background:none;border:1px solid transparent;border-radius:3px;padding:7px 12px;color:var(--ink-2);cursor:pointer;white-space:nowrap;font-family:var(--display);font-size:15px}
-nav.tabs button:hover{color:var(--ink);border-color:var(--frame)}
-nav.tabs button[aria-selected="true"]{color:var(--gold);border-color:var(--frame-hi);background:var(--panel)}
-h2{font-family:var(--display);font-weight:400;font-size:24px;color:var(--gold);margin:0;text-wrap:balance}
-h3{font-family:var(--display);font-weight:400;font-size:18px;margin:0;color:var(--ink)}
+h2{font-family:var(--display);font-weight:400;font-size:22px;color:var(--gold);margin:0;text-wrap:balance}
+h3{font-family:var(--display);font-weight:400;font-size:17px;margin:0;color:var(--ink)}
 .lede{color:var(--ink-2);max-width:68ch;margin:6px 0 0}
-.label{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-3);font-weight:500}
+.label{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-3);font-weight:600}
 .tip{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--frame);border-radius:4px;box-shadow:inset 0 0 0 1px #0006}
 .muted{color:var(--ink-3)} .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
-section[hidden]{display:none!important}
-.view{display:grid;gap:18px;padding-top:8px}
+[hidden]{display:none!important}
 
-/* ---- Find ---- */
-.find{display:grid;grid-template-columns:320px 1fr;gap:22px;align-items:start}
-@media (max-width:900px){.find{grid-template-columns:1fr}}
-.choices{padding:16px;display:grid;gap:14px;position:sticky;top:10px}
-@media (max-width:900px){.choices{position:static}}
-.choice{display:grid;gap:6px}
-.chips{display:flex;flex-wrap:wrap;gap:5px}
-.chip{border:1px solid var(--frame);background:#0c1120;border-radius:3px;padding:3px 9px;font-size:14px;cursor:pointer;color:var(--ink-2);line-height:1.4}
+/* ---- One screen: side column + planner ---- */
+.main{display:grid;grid-template-columns:minmax(280px,320px) minmax(0,1fr);gap:var(--s4);align-items:start}
+.side{display:grid;gap:var(--s3);position:sticky;top:var(--s2);max-height:calc(100vh - 16px);overflow:auto;scrollbar-width:thin;padding-right:2px}
+@media (max-width:900px){.main{grid-template-columns:1fr}.side{position:static;max-height:none;overflow:visible}}
+.choices{padding:var(--s3) var(--s4);display:grid;gap:var(--s3)}
+.ch-head{display:flex;justify-content:space-between;align-items:center;gap:var(--s2)}
+.choice{display:grid;gap:var(--s1)}
+.chips{display:flex;flex-wrap:wrap;gap:var(--s1)}
+.chip{border:1px solid var(--frame);background:#0c1120;border-radius:3px;padding:3px 9px;font-size:13.5px;cursor:pointer;color:var(--ink-2);line-height:1.4;min-height:28px}
 .chip:hover{border-color:var(--frame-hi);color:var(--ink)}
 .chip[aria-pressed="true"]{border-color:var(--gold-soft);color:var(--gold);background:#231d0a}
-.choices .foot{display:flex;flex-wrap:wrap;gap:8px;border-top:1px solid var(--frame);padding-top:12px}
-.btn{border:1px solid var(--frame-hi);background:#151c2e;border-radius:3px;padding:6px 12px;cursor:pointer;font-size:14px}
+.choices .foot{display:flex;flex-wrap:wrap;gap:var(--s2);border-top:1px solid var(--frame);padding-top:var(--s3)}
+.btn{border:1px solid var(--frame-hi);background:#151c2e;border-radius:3px;padding:6px 12px;cursor:pointer;font-size:14px;min-height:30px}
 .btn:hover{border-color:var(--gold-soft);color:var(--gold)}
 .btn.small{padding:3px 8px;font-size:13px}
-.results-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px}
-.list{display:grid;gap:6px;margin-top:10px}
-.row{display:grid;grid-template-columns:34px 1fr 190px;gap:12px;align-items:center;padding:10px 14px;cursor:pointer}
+.btn.quiet{border-color:transparent;color:var(--ink-3)} .btn.quiet:hover{border-color:var(--frame-hi);color:var(--ink)}
+.ranked{padding:var(--s3) var(--s3) var(--s3)}
+.results-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:var(--s2);margin-bottom:var(--s2)}
+.results-head h2{font-size:18px}
+.results-head .lede{font-size:13px;margin:0}
+.list{display:grid;gap:var(--s1)}
+.row{display:grid;grid-template-columns:22px minmax(0,1fr) 92px;gap:var(--s2);align-items:center;padding:7px 9px;cursor:pointer;border:1px solid transparent;border-radius:3px;background:#0c1120;min-height:44px}
 .row:hover{border-color:var(--frame-hi)}
-.row[aria-expanded="true"]{border-color:var(--gold-soft)}
-.rank{font-family:var(--mono);color:var(--ink-3);font-size:14px;text-align:right}
-.pname{font-family:var(--display);font-size:19px;line-height:1.15}
-.meta{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:13px;color:var(--ink-2);margin-top:2px}
+.row.sel{border-color:var(--gold-soft);background:#1a1a12}
+.row.sel .pname::after{content:" ◂";color:var(--gold-soft)}
+.rank{font-family:var(--mono);color:var(--ink-3);font-size:12px;text-align:right}
+.pname{font-family:var(--display);font-size:15.5px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta{display:flex;flex-wrap:wrap;gap:2px var(--s2);font-size:12px;color:var(--ink-2);line-height:1.35;align-items:center}
 .fac-Horde{color:var(--horde)} .fac-Alliance{color:var(--alliance)}
-.badge{font-size:11px;letter-spacing:.06em;text-transform:uppercase;border:1px solid currentColor;border-radius:2px;padding:0 5px;line-height:1.5}
+.badge{font-size:10px;letter-spacing:.06em;text-transform:uppercase;border:1px solid currentColor;border-radius:2px;padding:0 4px;line-height:1.5}
 .badge.new{color:var(--uncommon)} .badge.pack{color:var(--t-orange)}
-.fit{display:grid;grid-template-columns:1fr 46px;gap:8px;align-items:center}
-.bar{height:8px;background:#0a0f1c;border:1px solid var(--frame);border-radius:1px;overflow:hidden}
+.fit{display:grid;grid-template-columns:1fr 38px;gap:6px;align-items:center}
+.bar{height:6px;background:#0a0f1c;border:1px solid var(--frame);border-radius:1px;overflow:hidden}
 .bar i{display:block;height:100%}
-.score{font-family:var(--mono);font-weight:600;font-size:17px;text-align:right;font-variant-numeric:tabular-nums}
-@media (max-width:560px){.row{grid-template-columns:26px 1fr}.row .fit{grid-column:2}}
-.detail{padding:16px 18px;margin:-2px 0 6px;border-top:none;display:grid;gap:16px}
+.score{font-family:var(--mono);font-weight:600;font-size:14px;text-align:right;font-variant-numeric:tabular-nums}
+.why{font-size:12px;color:var(--ink-3);border:0;background:none;padding:0 2px;cursor:pointer;text-decoration:underline dotted}
+.why:hover{color:var(--gold)}
+.detail{padding:var(--s3) var(--s4);margin:2px 0 var(--s2);display:grid;gap:var(--s3);font-size:14px}
 .breakdown{display:grid;gap:6px}
-.stack{display:flex;height:22px;border:1px solid var(--frame);border-radius:2px;overflow:hidden;background:#0a0f1c}
+.stack{display:flex;height:16px;border:1px solid var(--frame);border-radius:2px;overflow:hidden;background:#0a0f1c}
 .stack span{display:block;height:100%;border-right:1px solid var(--night)}
-.legend{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:4px 16px;font-size:14px}
+.legend{display:grid;grid-template-columns:1fr;gap:3px;font-size:13px}
 .legend div{display:flex;gap:8px;align-items:baseline}
 .legend i{width:10px;height:10px;border-radius:1px;flex:none;align-self:center}
 .legend .num{margin-left:auto;color:var(--ink)}
-.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px 22px}
-.fact p{margin:3px 0 0;color:var(--ink)}
+.facts{display:grid;gap:var(--s2)}
+.fact p{margin:2px 0 0;color:var(--ink)}
 .fact .use{color:var(--uncommon)}
-.stats{display:flex;flex-wrap:wrap;gap:6px}
-.stat{border:1px solid var(--frame);border-radius:2px;padding:2px 8px;font-size:13px;color:var(--ink-2)}
+.stats{display:flex;flex-wrap:wrap;gap:var(--s1)}
+.stat{border:1px solid var(--frame);border-radius:2px;padding:1px 7px;font-size:12px;color:var(--ink-2)}
 .stat b{font-family:var(--mono);color:var(--ink);font-weight:600;margin-left:4px}
-.warnline{font-size:14px;color:var(--gold-soft);border-left:2px solid var(--gold-soft);padding-left:10px}
-.empty{padding:22px;color:var(--ink-2)}
+.warnline{font-size:13px;color:var(--gold-soft);border-left:2px solid var(--gold-soft);padding-left:10px}
+.empty{padding:var(--s5);color:var(--ink-2)}
 
-/* ---- Grid ---- */
-.gridwrap{overflow-x:auto}
-table{border-collapse:collapse;width:100%}
-.matrix{min-width:760px}
-.matrix th,.matrix td{border:1px solid var(--frame);padding:0;text-align:center}
-.matrix thead th{font-family:var(--display);font-weight:400;font-size:15px;padding:8px 4px;background:var(--panel)}
-.matrix tbody th{text-align:left;padding:6px 10px;font-weight:500;background:var(--panel);white-space:nowrap}
-.matrix td button{width:100%;height:42px;border:0;background:transparent;cursor:pointer;font-family:var(--mono);font-size:14px;font-variant-numeric:tabular-nums}
-.matrix td button:hover{outline:1px solid var(--gold-soft);outline-offset:-1px}
-.matrix td.na{background:repeating-linear-gradient(135deg,#0b0f19 0 6px,#0d1220 6px 12px)}
-.matrix td.out button{color:var(--ink-3)}
-.tiers{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--ink-2)}
-.tiers i{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px}
-
-/* ---- Tables / guides ---- */
+/* ---- More: guides and the numbers, out of the way under the main screen ---- */
+.more{margin-top:var(--s5);border-top:1px solid var(--frame);padding-top:var(--s3)}
+.more-bar{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center}
+.more-bar .label{margin-right:var(--s1)}
+.more-bar button[aria-expanded="true"]{border-color:var(--gold-soft);color:var(--gold)}
+.more-panel{margin-top:var(--s4);display:grid;gap:var(--s4)}
 .tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
 .tbl table{min-width:680px;font-size:14px}
 .tbl th{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:500;text-align:left;padding:8px 10px;border-bottom:1px solid var(--frame-hi);vertical-align:bottom}
 .tbl td{padding:9px 10px;border-bottom:1px solid var(--frame);vertical-align:top}
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
-.card{padding:14px 16px;display:grid;gap:8px;align-content:start}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:var(--s3)}
+.card{padding:14px 16px;display:grid;gap:var(--s2);align-content:start}
 .card dl{margin:0;display:grid;gap:6px}
 .card dt{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3)}
 .card dd{margin:0}
 .classpick{display:flex;flex-wrap:wrap;gap:6px}
 .classpick .chip{font-family:var(--display);font-size:15px}
-.cmp{overflow-x:auto}
-.cmp table{min-width:640px;table-layout:fixed}
-.cmp th{width:150px;text-align:left;font-weight:500;color:var(--ink-3);font-size:13px;text-transform:uppercase;letter-spacing:.07em;padding:9px 10px;border-bottom:1px solid var(--frame);vertical-align:top}
-.cmp td{padding:9px 10px;border-bottom:1px solid var(--frame);vertical-align:top;font-size:14px}
-.cmp td.best{color:var(--uncommon)}
+.checks{display:grid;gap:10px}
+.check{display:grid;grid-template-columns:120px 1fr;gap:14px;padding:14px 16px}
+@media (max-width:640px){.check{grid-template-columns:1fr}}
+.sev{font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+.sev.stale{color:var(--t-orange)} .sev.flaw{color:#ff6b5e} .sev.note{color:var(--t-blue)} .sev.fresh{color:var(--uncommon)}
+.check p{margin:4px 0 0;color:var(--ink-2);max-width:78ch}
 
-/* ---- Legacy ---- */
-.pool{display:flex;flex-wrap:wrap;gap:16px;align-items:center;padding:12px 16px}
-.pips{display:flex;gap:3px;flex-wrap:wrap}
-.pips i{width:12px;height:12px;border:1px solid var(--gold-soft);transform:rotate(45deg);margin:3px}
-.pips i.on{background:var(--gold)}
-.perk{display:grid;grid-template-columns:1fr auto;gap:6px 14px;padding:12px 14px;align-items:center}
-.stepper{display:flex;align-items:center;gap:6px}
-.stepper button{width:28px;height:28px;border:1px solid var(--frame-hi);background:#151c2e;border-radius:3px;cursor:pointer}
-.stepper button:disabled{opacity:.35;cursor:not-allowed}
-
-/* ---- Beta log ---- */
+/* ---- Beta log (personal page) ---- */
 .cohort{display:grid;gap:10px}
 .test{display:grid;grid-template-columns:minmax(160px,220px) 140px 1fr;gap:10px;align-items:start;padding:10px 0;border-top:1px solid var(--frame)}
 @media (max-width:700px){.test{grid-template-columns:1fr}}
@@ -143,131 +130,103 @@ table{border-collapse:collapse;width:100%}
 details.char{padding:4px 16px 12px}
 details.char summary{cursor:pointer;padding:10px 0;display:flex;justify-content:space-between;gap:10px;align-items:baseline;list-style:none}
 details.char summary::-webkit-details-marker{display:none}
-
-/* ---- Checks ---- */
-.checks{display:grid;gap:10px}
-.check{display:grid;grid-template-columns:120px 1fr;gap:14px;padding:14px 16px}
-@media (max-width:640px){.check{grid-template-columns:1fr}}
-.sev{font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
-.sev.stale{color:var(--t-orange)} .sev.flaw{color:#ff6b5e} .sev.note{color:var(--t-blue)} .sev.fresh{color:var(--uncommon)}
-.check p{margin:4px 0 0;color:var(--ink-2);max-width:78ch}
 .foot-note{margin-top:40px;padding-top:14px;border-top:1px solid var(--frame);font-size:13px;color:var(--ink-3)}
-.pl-head{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;padding:12px 14px}
-.pl-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:14px;margin-top:14px}
-@media (max-width:900px){.pl-grid{grid-template-columns:1fr}}
-.pl-points{margin:0 0 8px;font-size:15px}
-.pl-talents{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-@media (max-width:960px){.pl-talents{grid-template-columns:1fr}}
+
+/* ---- Planner ---- */
+.pl-head{display:flex;flex-wrap:wrap;gap:var(--s3) var(--s5);align-items:flex-start;padding:var(--s3) var(--s4)}
+.pl-head h2{font-size:24px}
+.pl-actions{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center;margin-top:var(--s3);padding-top:var(--s3);border-top:1px solid var(--frame);width:100%}
+.pl-actions label{font-size:13px;color:var(--ink-2)}
+.pl-about{margin:var(--s2) 0 0;font-size:13px;color:var(--ink-3)} .pl-about summary{cursor:pointer;color:var(--ink-2)} .pl-about p{margin:6px 0 0;max-width:90ch}
+.pl-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:var(--s3);margin-top:var(--s3)}
+@media (max-width:1180px){.pl-grid{grid-template-columns:1fr}}
+.pl-points{margin:var(--s3) 0 var(--s2);font-size:14px;color:var(--ink-2)}
+.pl-talents{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s3)}
+@media (max-width:1180px){.pl-talents{grid-template-columns:1fr}}
 .tree{padding:10px}
 .tree h3{margin:0 0 8px}
 .tgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
-.tal{border:1px solid var(--frame);border-radius:4px;padding:5px 2px 4px;text-align:center;font-size:11px;line-height:1.15;cursor:pointer;background:#0f1424;display:flex;flex-direction:column;align-items:center;gap:3px}
+.tal{border:1px solid var(--frame);border-radius:4px;padding:5px 2px 4px;text-align:center;font-size:11px;line-height:1.15;cursor:pointer;background:#0f1424;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
 .tal img{width:38px;height:38px;border-radius:4px;display:block;border:1px solid #333}
 .tal .tn{min-height:2.3em;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.tal .tp{display:flex;align-items:center;gap:3px;font-size:11px} .tal .tp button{width:20px;height:20px;line-height:1;padding:0;border:1px solid var(--frame-hi);background:#151c2e;border-radius:3px;cursor:pointer} .tal .tp button:disabled{opacity:.3;cursor:default}
+.tal .tp{display:flex;align-items:center;gap:3px;font-size:11px;margin-top:2px} .tal .tp button{width:22px;height:22px;line-height:1;padding:0;border:1px solid var(--frame-hi);background:#151c2e;border-radius:3px;cursor:pointer} .tal .tp button:disabled{opacity:.3;cursor:default}
+@media (pointer:coarse){.tal .tp button{width:30px;height:30px}}
 .tal:hover:not(.locked){border-color:var(--frame-hi)}
 .tal.maxed{border-color:var(--gold-soft)} .tal.maxed img{border-color:var(--gold)}
 .tal.part{border-color:#2f8cff}
-.tal.locked{opacity:.45}
+.tal.locked{opacity:.6} .tal.locked img{filter:grayscale(.6)}
 .tal b.fx.fx-new,b.fx.fx-new{background:#2f8cff;color:#fff} .tal.is-new{border-style:dashed} .tal.is-new.maxed,.tal.is-new.part{border-style:solid}
-.tal{position:relative} .tal .fx{position:absolute;top:2px;right:2px;font-family:var(--mono);font-size:10px;line-height:1;padding:2px 4px;border-radius:3px;background:var(--gold);color:#000;font-weight:700} b.fx{font-family:var(--mono);font-size:11px;padding:1px 4px;border-radius:3px;background:var(--gold);color:#000}
+.tal .fx{position:absolute;top:2px;right:2px;font-family:var(--mono);font-size:10px;line-height:1;padding:2px 4px;border-radius:3px;background:var(--gold);color:#000;font-weight:700} b.fx{font-family:var(--mono);font-size:11px;padding:1px 4px;border-radius:3px;background:var(--gold);color:#000}
 .pl-forever{padding:10px 14px} .pl-forever ul{margin:2px 0 10px;padding-left:18px;font-size:14px} .pl-forever li{margin:3px 0} .pl-forever .label{margin-top:6px}
 .src{font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:1px 5px;border-radius:3px;border:1px solid var(--frame-hi);color:var(--ink-2);vertical-align:1px} .src-blizzard{color:var(--uncommon);border-color:var(--uncommon)} .src-press{color:var(--t-blue);border-color:var(--t-blue)} .src-fan{color:var(--t-orange);border-color:var(--t-orange)}
-.tn{line-height:1.15;min-height:2.3em}
-.tp{display:flex;justify-content:center;gap:4px;align-items:center;margin-top:4px}
-.tp button{width:20px;height:20px;padding:0;line-height:1;border:1px solid var(--frame-hi);background:#151c2e;border-radius:3px;cursor:pointer}
-.tp button:disabled{opacity:.3;cursor:default}
-.pl-side{display:grid;gap:12px;align-content:start}
+.pl-side{display:grid;gap:var(--s3);align-content:start}
 .pl-stats,.pl-gear,.pl-dps,.pl-legacy{padding:10px 14px}
 .pl-dpsnum{font-size:30px;line-height:1.1;margin:2px 0 4px} .pl-dpsnum .num{color:var(--gold)}
 .pl-perk{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;padding:6px 0;border-top:1px solid var(--frame);font-size:14px}
+.stepper{display:flex;align-items:center;gap:6px}
+.stepper button{width:28px;height:28px;border:1px solid var(--frame-hi);background:#151c2e;border-radius:3px;cursor:pointer}
+.stepper button:disabled{opacity:.35;cursor:not-allowed}
 .pl-statgrid{display:grid;grid-template-columns:auto auto auto auto;gap:4px 14px;font-size:14px}
 @media (max-width:560px){.pl-statgrid{grid-template-columns:auto auto}}
 .slot{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--frame)}
+.slot .alts{margin-top:3px;line-height:1.7} .slot .alts .btn{padding:1px 7px;font-size:12px;line-height:1.4;min-height:22px;vertical-align:1px}
+.pl-forever summary{cursor:pointer} .pl-forever summary h3{display:inline}
 .slot select{max-width:100%;width:100%;box-sizing:border-box;background:#0f1424;border:1px solid var(--frame-hi);color:inherit;border-radius:3px;padding:3px 4px;font-size:13px;margin-top:2px}
 .slot img{border-radius:3px}
 .picker{padding:10px;margin:0 0 8px}
 .picker input{width:100%;box-sizing:border-box;padding:6px 8px;background:#0f1424;border:1px solid var(--frame-hi);color:inherit;border-radius:3px;margin-bottom:8px}
 .pick{display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--frame)}
-.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--panel-2);border:1px solid var(--gold-soft);color:var(--gold);padding:8px 14px;border-radius:3px;font-size:14px}
-@media (prefers-reduced-motion:no-preference){.row,.chip,.btn{transition:border-color .12s,color .12s}}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--panel-2);border:1px solid var(--gold-soft);color:var(--gold);padding:8px 14px;border-radius:3px;font-size:14px;z-index:9}
+@media (prefers-reduced-motion:no-preference){.row,.chip,.btn{transition:border-color .12s,color .12s,background-color .12s}}
 </style>
 
 <div class="wrap">
 <header class="top">
-  <h1>Forever Class &amp; Race Calculator<small>Pick what you enjoy. Every race and class path re-ranks as you click.</small></h1>
+  <h1>Forever Class &amp; Race Planner<small>Pick what you enjoy on the left. The list re-ranks, and the planner on the right follows the path you select.</small></h1>
   <div class="stamp">Data as of <b id="dataDate"></b><br>Beta opens 17 Sep · Launch 4 Nov · Raids 9 Dec</div>
 </header>
-<nav class="tabs" role="tablist" aria-label="Sections">
-  <button role="tab" data-tab="find" aria-selected="true">Find your main</button>
-  <button role="tab" data-tab="grid">All 56 at a glance</button>
-  <button role="tab" data-tab="compare">Compare <span id="cmpCount" class="num"></span></button>
-  <button role="tab" data-tab="races">Races</button>
-  <button role="tab" data-tab="classes">Classes</button>
-  <button role="tab" data-tab="planner">Planner</button>
-  <button role="tab" data-tab="beta">Beta log</button>
-  
-  <button role="tab" data-tab="checks">How it scores</button>
-  <button role="tab" data-tab="sources">Sources</button>
-</nav>
 
-<section class="view" data-view="find">
-  <div class="find">
-    <aside class="choices tip" id="choices" aria-label="Your choices"></aside>
-    <div>
+<div class="main">
+  <aside class="side" aria-label="Your choices and the ranked paths">
+    <div class="choices tip" id="choices"></div>
+    <div class="ranked tip">
       <div class="results-head">
-        <div><h2 id="resTitle">Top 10</h2><p class="lede" id="resSub"></p></div>
-        <button class="btn small" id="toggleAll">Show all</button>
+        <div><h2 id="resTitle">Best fits</h2><p class="lede" id="resSub"></p></div>
+        <button class="btn small quiet" id="toggleAll">Show all</button>
       </div>
-      <div class="list" id="list"></div>
+      <div class="list" id="list" role="listbox" aria-label="Ranked paths"></div>
     </div>
+    
+  </aside>
+  <main id="planner" aria-label="Talents and gear planner"><div class="empty tip">Loading talent trees and items…</div></main>
+</div>
+
+<section class="more" aria-label="Guides and the numbers">
+  <div class="more-bar"><span class="label">More</span>
+    <button class="btn small" data-more="races" aria-expanded="false">Races</button>
+    <button class="btn small" data-more="classes" aria-expanded="false">Classes</button>
+    <button class="btn small" data-more="checks" aria-expanded="false">How it scores</button>
+    <button class="btn small" data-more="sources" aria-expanded="false">Sources</button>
+    
   </div>
-</section>
-
-<section class="view" data-view="grid" hidden>
-  <div><h2>Every path, scored for your choices</h2>
-  <p class="lede">Rows are races, columns are classes. Striped cells don't exist in Forever. Grey numbers are paths your faction, class or race filter would hide. Click any number to open that path.</p></div>
-  <div class="tiers" id="tierKey"></div>
-  <div class="gridwrap tip"><table class="matrix" id="matrix"></table></div>
-</section>
-
-<section class="view" data-view="planner" hidden>
-  <div><h2>Talents &amp; gear planner</h2><p class="lede">Open a path from “Find your main”. The planner starts from the expected best talents and a starter gear set for the spec, then you change anything. Choices save in the link.</p></div>
-  <div id="planner"></div>
-</section>
-<section class="view" data-view="compare" hidden>
-  <div><h2>Side by side</h2><p class="lede">Add up to three paths with "Compare" on any result. Green marks the best value in each row.</p></div>
-  <div id="cmp"></div>
-</section>
-
-<section class="view" data-view="races" hidden>
-  <div><h2>Races</h2><p class="lede">Race is a tiebreaker after class, role and what you want to do. In the scoring it moves a path by at most one point. Every value below is from demo footage or reporting until checked on a beta tooltip.</p></div>
-  <div class="cards" id="races"></div>
-</section>
-
-<section class="view" data-view="classes" hidden>
-  <div><h2>Classes</h2><p class="lede">Talents, gear and professions for one class. Treat the talent path as a starting point, not a lock.</p></div>
-  <div class="classpick" id="classPick"></div>
-  <div id="classBody" class="view"></div>
-</section>
-
-
-<section class="view" data-view="beta" hidden>
-  <div><h2>Beta log</h2><p class="lede">Run the same tests on every character you try, so the results compare. Add characters with “Add to beta plan” on any result. Notes save in this browser only; use “Copy all notes” to keep them somewhere safe.</p></div>
-  <div class="chips"><button class="btn small" id="copyBeta">Copy all notes</button></div>
-  <div class="cohort" id="cohort"></div>
-</section>
-
-
-
-<section class="view" data-view="checks" hidden>
-  <div><h2>How it scores, and what's still unknown</h2><p class="lede">Checked against everything publicly known on the date at the top. Forever numbers come from BlizzCon demos and press until the beta client can be checked.</p></div>
-  <div class="checks" id="checks"></div>
-</section>
-
-<section class="view" data-view="sources" hidden>
-  <div><h2>Sources</h2><p class="lede">Blizzard first, then press, then single fan sites as leads only.</p></div>
-  <div class="tbl tip" id="sources"></div>
+  <div class="more-panel" data-more-panel="races" hidden>
+    <div><h2>Races</h2><p class="lede">Race is a tiebreaker after class, role and what you want to do. In the scoring it moves a path by at most one point. Every value below is from demo footage or reporting until checked on a beta tooltip.</p></div>
+    <div class="cards" id="races"></div>
+  </div>
+  <div class="more-panel" data-more-panel="classes" hidden>
+    <div><h2>Classes</h2><p class="lede">Talents, gear and professions for one class. Treat the talent path as a starting point, not a lock.</p></div>
+    <div class="classpick" id="classPick"></div>
+    <div id="classBody" class="more-panel" style="margin-top:0"></div>
+  </div>
+  <div class="more-panel" data-more-panel="checks" hidden>
+    <div><h2>How it scores, and what's still unknown</h2><p class="lede">Checked against everything publicly known on the date at the top. Forever numbers come from BlizzCon demos and press until the beta client can be checked.</p></div>
+    <div class="checks" id="checks"></div>
+  </div>
+  <div class="more-panel" data-more-panel="sources" hidden>
+    <div><h2>Sources</h2><p class="lede">Blizzard first, then press, then single fan sites as leads only.</p></div>
+    <div class="tbl tip" id="sources"></div>
+  </div>
+  
 </section>
 <footer class="foot-note">Fan-made planning tool for World of Warcraft: Forever. Not affiliated with or endorsed by Blizzard Entertainment. Scores are guidance, not a tier list.</footer>
 </div>
@@ -332,45 +291,36 @@ const OPTS={
 };
 const DEFAULTS={...DATA.build.defaults};
 const SHORT={faction:"f",role:"r",goal:"g",exp:"e",cls:"c",race:"ra",profPri:"p"};
-const TIERS=[[100,"#e5cc80","100"],[95,"#ff8000","95–99"],[75,"#b048f8","75–94"],[50,"#2f8cff","50–74"],[25,"#1eff00","25–49"],[0,"#9d9d9d","0–24"]];
+// Warcraft Logs tier colours, lifted where the game value fails 4.5:1 on this ground (purple and blue, 15 Sep UI audit).
+const TIERS=[[100,"#e5cc80","100"],[95,"#ff8000","95–99"],[75,"#c06cff","75–94"],[50,"#4d9eff","50–74"],[25,"#1eff00","25–49"],[0,"#9d9d9d","0–24"]];
 const tierColor=s=>TIERS.find(t=>s>=t[0])[1];
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const $=s=>document.querySelector(s);
 
-let state={I:{...DEFAULTS},cmp:[],legacy:{},open:null,all:false,tab:"find"};
+let state={I:{...DEFAULTS},legacy:{},open:null,all:false,more:null};
+const MORE_FROM_TAB={races:"races",classes:"classes",checks:"checks",sources:"sources",beta:"beta"}; // old t= link values that still mean something
 
 /* ---------- link-saved state ---------- */
 function readHash(){
   const h=new URLSearchParams(location.hash.slice(1));
   for(const k in SHORT){const v=h.get(SHORT[k]);if(v&&OPTS[k].v.includes(v))state.I[k]=v}
-  if(h.get("cmp"))state.cmp=h.get("cmp").split("~").filter(n=>DATA.paths.some(p=>p.name===n)).slice(0,3);
   if(h.get("lg"))h.get("lg").split("~").forEach(x=>{const [i,n]=x.split(".");if(DATA.legacy[+i])state.legacy[+i]=+n});
-  if(h.get("t"))state.tab=h.get("t")==="legacy"?"planner":h.get("t");
+  // Old links: t= (tabs) and cmp= (compare) are gone. A guide or sources tab opens as its More panel; anything else lands on the main screen.
+  if(h.get("t")&&MORE_FROM_TAB[h.get("t")]&&document.querySelector(`[data-more="${MORE_FROM_TAB[h.get("t")]}"]`))state.more=MORE_FROM_TAB[h.get("t")];
   if(h.get("pl")){const [pi,spec,tal,gear,raid,pvp,ver,opt,ench,phase]=h.get("pl").split("|");const p=DATA.paths[+pi];if(p){state.pl={path:p.name,spec,tStr:tal||"",gearStr:gear||"",raid:raid==="1",pvp:pvp==="1",ver:ver||"",opt:opt||"",enchStr:ench||"",phase:phase||"l60",t:null,gear:{},ench:{}}}}
 }
 function writeHash(){
   const h=new URLSearchParams();
   for(const k in SHORT)if(state.I[k]!==DEFAULTS[k])h.set(SHORT[k],state.I[k]);
-  if(state.cmp.length)h.set("cmp",state.cmp.join("~"));
   if(state.pl&&state.pl.t)h.set("pl",[DATA.paths.findIndex(p=>p.name===state.pl.path),state.pl.spec,plTalentString(state.pl.t),PL_SLOTS.map(([n])=>state.pl.gear[n]||"").join(","),state.pl.raid?1:0,state.pl.pvp?1:0,PL?PL.treeVer:"",`b${state.pl.buffs?1:0}c${state.pl.cons?1:0}d${state.pl.deb?1:0}`,PL_SLOTS.map(([n])=>(state.pl.ench||{})[n]||"").join(","),state.pl.phase||"l60"].join("|"));
   const lg=Object.entries(state.legacy).filter(([,n])=>n>0).map(([i,n])=>i+"."+n).join("~");if(lg)h.set("lg",lg);
-  if(state.tab!=="find")h.set("t",state.tab);
   history.replaceState(null,"","#"+h.toString());
 }
-function toast(msg){const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.append(t);setTimeout(()=>t.remove(),1800)}
+function toast(msg){const t=document.createElement("div");t.className="toast";t.setAttribute("role","status");t.textContent=msg;document.body.append(t);setTimeout(()=>t.remove(),1800)}
 function copyText(text,done){
   const fallback=()=>{const ta=document.createElement("textarea");ta.value=text;document.body.append(ta);ta.select();try{document.execCommand("copy");toast(done)}catch(e){toast("Copy blocked by the browser")}ta.remove()};
   if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(text).then(()=>toast(done),fallback);else fallback();
 }
-
-/* ---------- tabs ---------- */
-function showTab(t){
-  state.tab=t;
-  document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));
-  document.querySelectorAll("section.view").forEach(s=>s.hidden=s.dataset.view!==t);
-  writeHash();
-}
-document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>{showTab(b.dataset.tab);renderAll()});
 
 /* ---------- scoring helpers (parts, weights and fitScore live in the engine above) ---------- */
 const isNew=p=>/New Forever combination/.test(p.evidence);
@@ -382,20 +332,26 @@ const displayName=p=>p.name.replace(" Skyborne "," ");
 // Spec for the chosen role: PvP spec for Pure PvP, otherwise the PvE spec. Null when role is Any or Hybrid, or the class cannot fill it.
 const specFor=(p,I)=>{const s=DATA.specs.find(x=>x.Class===p.cls);const r=s&&s[I.role];return r?r[I.goal==="Pure PvP"?"PvP":"PvE"]:null};
 
-/* ---------- Find ---------- */
+/* ---------- Choices ---------- */
 function renderChoices(){
-  const el=$("#choices");
-  el.innerHTML=`<div><div class="label" style="color:var(--gold-soft)">Your choices</div></div>`+
-    Object.entries(OPTS).map(([k,o])=>`<div class="choice"><div class="label" id="lab-${k}">${o.label}</div><div class="chips" role="group" aria-labelledby="lab-${k}">${o.v.map(v=>`<button class="chip" id="opt-${k}-${esc(v).replace(/\W/g,"")}" data-k="${k}" data-v="${esc(v)}" aria-pressed="${state.I[k]===v}">${esc(v)}</button>`).join("")}</div></div>`).join("")+
-    `<div class="foot"><button class="btn small" id="copyLink">Copy link to these choices</button><button class="btn small" id="resetChoices">Reset</button></div>`;
-  el.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{state.I[b.dataset.k]=b.dataset.v;state.open=null;writeHash();renderAll()});
-  $("#copyLink").onclick=()=>copyText(location.href,"Link copied");
-  $("#resetChoices").onclick=()=>{state.I={...DEFAULTS};state.open=null;writeHash();renderAll()};
+  const el=$("#choices"), narrow=window.matchMedia("(max-width:900px)").matches;
+  if(state.chOpen==null)state.chOpen=!narrow; // on a phone the 42 chips would push the list below the fold, so start folded to a summary line
+  const summary=Object.entries(OPTS).map(([k,o])=>state.I[k]).filter(v=>v!=="Any"&&v!=="None").join(" · ")||"Everything, no filters";
+  el.innerHTML=`<div class="ch-head"><div class="label" style="color:var(--gold-soft)">Your choices</div>${narrow?`<button class="btn small quiet" id="chToggle" aria-expanded="${state.chOpen}">${state.chOpen?"Done":"Change"}</button>`:""}</div>`+
+    (state.chOpen?Object.entries(OPTS).map(([k,o])=>`<div class="choice"><div class="label" id="lab-${k}">${o.label}</div><div class="chips" role="group" aria-labelledby="lab-${k}">${o.v.map(v=>`<button class="chip" id="opt-${k}-${esc(v).replace(/\W/g,"")}" data-k="${k}" data-v="${esc(v)}" aria-pressed="${state.I[k]===v}">${esc(v)}</button>`).join("")}</div></div>`).join("")+
+    `<div class="foot"><button class="btn small" id="copyLink">Copy link</button><button class="btn small quiet" id="resetChoices">Reset</button></div>`:`<div class="muted" style="font-size:14px">${esc(summary)}</div>`);
+  el.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{state.I[b.dataset.k]=b.dataset.v;state.open=null;writeHash();renderChoices();renderFind();syncPlanner()});
+  const ct=$("#chToggle"); if(ct)ct.onclick=()=>{state.chOpen=!state.chOpen;renderChoices()};
+  if(!state.chOpen)return;
+  $("#copyLink").onclick=()=>copyText(location.href,"Link copied. It holds your choices and the build on the right.");
+  $("#resetChoices").onclick=()=>{state.I={...DEFAULTS};state.open=null;state.pinned=null;writeHash();renderChoices();renderFind();syncPlanner()};
 }
+
+/* ---------- Ranked list: selecting a row plans it on the right ---------- */
 function detailHTML(p,I){
   const pr=parts(p,I).filter(x=>x.w>0), total=fitScore(p,I), rr=raceRow(p);
   const cg=DATA.classGuide.find(c=>c.Class===p.cls), tt=DATA.talents.find(c=>c.Class===p.cls);
-  const pair=profFor(p,I), inCmp=state.cmp.includes(p.name);
+  const pair=profFor(p,I);
   return `<div class="detail tip">
     <div class="breakdown"><div class="label">Why it scored ${total}${I.role!=="Any"?" · flexibility not counted because you picked a role":""}</div>
       <div class="stack" aria-hidden="true">${pr.map(x=>`<span title="${x.label}" style="width:${x.pts}%;background:${x.c}"></span>`).join("")}</div>
@@ -409,72 +365,47 @@ function detailHTML(p,I){
       <div class="fact"><div class="label">What's new for ${esc(p.cls)}</div><p>${esc(cg?cg["Forever check"]:"")}</p></div>
     </div>
     <div class="warnline">${esc(p.evidence)}</div>
-    <div class="chips"><button class="btn small" data-planner="${esc(p.name)}">Plan talents &amp; gear</button><button class="btn small" data-cmp="${esc(p.name)}">${inCmp?"Remove from compare":"Compare"}</button><button class="btn small" data-plan="${esc(p.name)}">${loadPlan().some(c=>c.path===p.name)?"In beta plan ✓":"Add to beta plan"}</button>${isSky(p)?`<span class="muted" style="font-size:14px;align-self:center">Skyborne needs the Heroic Pack ($29.99) or higher.</span>`:""}</div>
+    ${DATA.build.personal||isSky(p)?`<div class="chips">${DATA.build.personal?`<button class="btn small" data-plan="${esc(p.name)}">${loadPlan().some(c=>c.path===p.name)?"In beta plan ✓":"Add to beta plan"}</button>`:""}${isSky(p)?`<span class="muted" style="font-size:13px;align-self:center">Skyborne needs the Heroic Pack ($29.99) or higher.</span>`:""}</div>`:""}
   </div>`;
 }
+const selectedPath=()=>state.pl&&state.pl.path;
 function renderFind(){
   const I=state.I, ranked=rankAll(DATA.paths,I), shown=state.all?ranked:ranked.slice(0,10);
-  $("#resTitle").textContent=state.all?`All ${ranked.length} matching paths`:(ranked.length<10?`${ranked.length} matching paths`:"Top 10");
+  $("#resTitle").textContent=state.all?`All ${ranked.length} fits`:(ranked.length<10?`${ranked.length} fits`:"Best 10 fits");
   $("#resSub").textContent=ranked.length?`${I.faction==="Any"?"Both factions":I.faction} · ${I.role} · ${I.goal==="Balanced"?"balanced PvP and PvE":I.goal}`:"";
-  $("#toggleAll").hidden=ranked.length<=10; $("#toggleAll").textContent=state.all?"Show top 10":"Show all "+ranked.length;
+  $("#toggleAll").hidden=ranked.length<=10; $("#toggleAll").textContent=state.all?"Show best 10":"Show all "+ranked.length;
   if(!ranked.length){$("#list").innerHTML=`<div class="empty tip">No path matches those filters. Set class or race back to <b>Any</b>, or pick a race your faction can play.</div>`;return}
-  $("#list").innerHTML=shown.map((s,i)=>{const p=s.p,open=state.open===p.name;return `
-    <div class="row tip" role="button" tabindex="0" aria-expanded="${open}" data-name="${esc(p.name)}">
+  const sel=selectedPath();
+  $("#list").innerHTML=shown.map((s,i)=>{const p=s.p,open=state.open===p.name,isSel=sel===p.name;return `
+    <div class="row${isSel?" sel":""}" role="option" tabindex="0" aria-selected="${isSel}" data-name="${esc(p.name)}" title="Plan ${esc(displayName(p))} on the right">
       <div class="rank">${i+1}</div>
       <div><div class="pname" style="color:${TEXT_COLOR[p.cls]}">${esc(displayName(p))}</div>
-        <div class="meta"><span class="fac-${p.faction}">${p.faction}</span><span>${(sp=>sp?`<b>${esc(sp)}</b> for ${esc(I.role)}`:esc(p.roles))(specFor(p,I))}</span>${isNew(p)?`<span class="badge new">New combo</span>`:""}${isSky(p)?`<span class="badge pack">Pack race</span>`:""}</div>
-        <div class="meta muted">${esc(whyItFits(p,I).join(" · "))} <button class="btn small" data-planner="${esc(p.name)}">Plan talents &amp; gear</button></div></div>
+        <div class="meta"><span class="fac-${p.faction}">${p.faction}</span><span>${(sp=>sp?`<b>${esc(sp)}</b>`:esc(p.roles))(specFor(p,I))}</span>${isNew(p)?`<span class="badge new">New combo</span>`:""}${isSky(p)?`<span class="badge pack">Pack race</span>`:""}<button class="why" data-why="${esc(p.name)}" aria-expanded="${open}" aria-label="Why ${esc(displayName(p))} scored ${s.score}">${open?"hide why":"why?"}</button></div></div>
       <div class="fit"><div class="bar"><i style="width:${s.score}%;background:${tierColor(s.score)}"></i></div><div class="score" style="color:${tierColor(s.score)}">${s.score}</div></div>
     </div>${open?detailHTML(p,I):""}`}).join("");
-  $("#list").querySelectorAll(".row").forEach(r=>{const go=()=>{state.open=state.open===r.dataset.name?null:r.dataset.name;renderFind()};r.onclick=go;r.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}}});
-  $("#list").querySelectorAll("[data-cmp]").forEach(b=>b.onclick=e=>{e.stopPropagation();toggleCmp(b.dataset.cmp);renderFind()});
+  $("#list").querySelectorAll(".row").forEach(r=>{const go=()=>plOpen(r.dataset.name,null,true);r.onclick=go;r.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}}});
+  $("#list").querySelectorAll("[data-why]").forEach(b=>b.onclick=e=>{e.stopPropagation();state.open=state.open===b.dataset.why?null:b.dataset.why;renderFind()});
   $("#list").querySelectorAll("[data-plan]").forEach(b=>b.onclick=e=>{e.stopPropagation();addToPlan(b.dataset.plan);renderFind()});
-  $("#list").querySelectorAll("[data-planner]").forEach(b=>b.onclick=e=>{e.stopPropagation();plOpen(b.dataset.planner)});
 }
 $("#toggleAll").onclick=()=>{state.all=!state.all;renderFind()};
-function toggleCmp(n){
-  if(state.cmp.includes(n))state.cmp=state.cmp.filter(x=>x!==n);
-  else{if(state.cmp.length>=3){toast("Compare holds three. Remove one first.");return}state.cmp.push(n)}
-  writeHash();$("#cmpCount").textContent=state.cmp.length?`(${state.cmp.length})`:"";
+/* The planner follows the choices. A path the user selected stays while it is still listed and can fill the chosen role;
+   otherwise the best fit is planned. */
+function syncPlanner(){
+  const ranked=rankAll(DATA.paths,state.I); if(!ranked.length)return;
+  const pin=state.pinned&&ranked.find(s=>s.p.name===state.pinned);
+  const keep=pin&&(state.I.role==="Any"||state.I.role==="Hybrid"||specFor(pin.p,state.I));
+  if(!keep)state.pinned=null;
+  plOpen(keep?state.pinned:ranked[0].p.name);
 }
 
-/* ---------- Grid ---------- */
-function renderGrid(){
-  $("#tierKey").innerHTML="Fit colours follow Warcraft Logs parse tiers: "+TIERS.slice(1).reverse().map(t=>`<span><i style="background:${t[1]}"></i>${t[2]}</span>`).join("");
-  const rows=[["Human","Alliance"],["Dwarf","Alliance"],["Night Elf","Alliance"],["Gnome","Alliance"],["High Order","Alliance"],["Orc","Horde"],["Undead","Horde"],["Tauren","Horde"],["Troll","Horde"],["Windshaper","Horde"]];
-  const noFilter={...state.I,faction:"Any",cls:"Any",race:"Any"};
-  $("#matrix").innerHTML=`<thead><tr><th></th>${CLASSES.map(c=>`<th style="color:${TEXT_COLOR[c]}">${c}</th>`).join("")}</tr></thead><tbody>`+
-    rows.map(([r,f])=>`<tr><th><span class="fac-${f}">${f==="Horde"?"H":"A"}</span>&nbsp; ${r}</th>${CLASSES.map(c=>{
-      const p=DATA.paths.find(x=>x.cls===c&&(x.race===r||(x.race==="Skyborne"&&x.name.startsWith(r))));
-      if(!p)return `<td class="na" aria-label="Not available"></td>`;
-      const s=fitScore(p,state.I), raw=fitScore(p,noFilter), out=s===0;
-      return `<td class="${out?"out":""}"><button data-go="${esc(p.name)}" title="${esc(p.name)}" style="${out?"":`color:${tierColor(s)}`}">${out?raw:s}${isNew(p)?"<sup style='color:var(--uncommon)'>•</sup>":""}</button></td>`}).join("")}</tr>`).join("")+`</tbody>`;
-  $("#matrix").querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{
-    const p=DATA.paths.find(x=>x.name===b.dataset.go);
-    if(fitScore(p,state.I)===0){state.I.faction="Any";state.I.cls="Any";state.I.race="Any"}
-    state.open=p.name;state.all=true;showTab("find");renderAll();
-    requestAnimationFrame(()=>document.querySelector(`.row[data-name="${CSS.escape(p.name)}"]`)?.scrollIntoView({block:"center"}));
-  });
+/* ---------- More: guides and the numbers ---------- */
+function showMore(k){
+  state.more=state.more===k?null:k;
+  document.querySelectorAll("[data-more]").forEach(b=>b.setAttribute("aria-expanded",b.dataset.more===state.more));
+  document.querySelectorAll("[data-more-panel]").forEach(p=>p.hidden=p.dataset.morePanel!==state.more);
+  if(state.more==="races")renderRaces(); if(state.more==="classes")renderClasses(); if(state.more==="checks")renderChecks(); if(state.more==="sources")renderSources(); if(state.more==="beta")renderBeta();
 }
-
-/* ---------- Compare ---------- */
-function renderCompare(){
-  $("#cmpCount").textContent=state.cmp.length?`(${state.cmp.length})`:"";
-  if(!state.cmp.length){$("#cmp").innerHTML=`<div class="empty tip">Nothing to compare yet. Open a path on “Find your main” and press Compare.</div>`;return}
-  const ps=state.cmp.map(n=>DATA.paths.find(p=>p.name===n)), I=state.I;
-  const numRow=(label,f)=>{const vals=ps.map(f),mx=Math.max(...vals);return `<tr><th>${label}</th>${vals.map(v=>`<td class="num ${ps.length>1&&v===mx&&vals.filter(x=>x===mx).length<ps.length?"best":""}">${+v.toFixed(1)}</td>`).join("")}</tr>`};
-  const txtRow=(label,f)=>`<tr><th>${label}</th>${ps.map(p=>`<td>${f(p)}</td>`).join("")}</tr>`;
-  $("#cmp").innerHTML=`<div class="cmp tip"><table>
-    <tr><th></th>${ps.map(p=>`<td><div class="pname" style="color:${TEXT_COLOR[p.cls]}">${esc(displayName(p))}</div><div class="meta"><span class="fac-${p.faction}">${p.faction}</span></div><button class="btn small" style="margin-top:6px" data-rm="${esc(p.name)}">Remove</button></td>`).join("")}</tr>
-    ${numRow("Fit score",p=>fitScore(p,I))}
-    ${parts(ps[0],I).map((x,i)=>x.w?numRow(`${x.label} <span class="muted">(${Math.round(x.w*100)}%)</span>`,p=>parts(p,I)[i].pts):"").join("")}
-    ${[["Beginner","beginner"],["Solo","solo"],["Raid","raid"],["PvP","pvp"],["Flexibility","flex"],["Gold farming","gold"],["Race fit","racefit"]].map(([l,k])=>numRow(l,p=>p[k])).join("")}
-    ${I.role!=="Any"&&I.role!=="Hybrid"?txtRow(`Spec for ${esc(I.role)}`,p=>esc(specFor(p,I)||"Cannot fill this role")):""}${txtRow("Roles",p=>esc(p.roles))}${txtRow("Complexity",p=>esc(p.style))}
-    ${txtRow("Racials",p=>esc(p.racial))}${txtRow("Talent path",p=>esc(p.talent))}
-    ${txtRow(`Professions (${esc(I.profPri)})`,p=>esc(profFor(p,I)))}${I.goal==="Gold farmer"?txtRow("Gold farmer pair",p=>esc(goldPair(p))):""}${txtRow("Evidence",p=>`<span class="muted">${esc(p.evidence)}</span>`)}
-  </table></div>`;
-  $("#cmp").querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{toggleCmp(b.dataset.rm);renderCompare()});
-}
+document.querySelectorAll("[data-more]").forEach(b=>b.onclick=()=>{showMore(b.dataset.more);if(state.more)b.closest(".more").scrollIntoView({block:"start",behavior:"smooth"})});
 
 /* ---------- Races ---------- */
 function renderRaces(){
@@ -489,8 +420,9 @@ function renderRaces(){
 /* ---------- Classes ---------- */
 let classSel="Warrior";
 function renderClasses(){
+  if(state.pl){const p=DATA.paths.find(x=>x.name===state.pl.path); if(p&&!renderClasses.touched)classSel=p.cls}
   $("#classPick").innerHTML=CLASSES.map(c=>`<button class="chip" aria-pressed="${c===classSel}" data-c="${c}" style="color:${TEXT_COLOR[c]}">${c}</button>`).join("");
-  $("#classPick").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{classSel=b.dataset.c;renderClasses()});
+  $("#classPick").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{classSel=b.dataset.c;renderClasses.touched=true;renderClasses()});
   const cg=DATA.classGuide.find(x=>x.Class===classSel), t=DATA.talents.find(x=>x.Class===classSel), g=DATA.gear.find(x=>x.Class===classSel), pr=DATA.profs.find(x=>x.Class===classSel);
   const dl=o=>`<dl>${o.filter(([,v])=>v).map(([k,v])=>`<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>`;
   $("#classBody").innerHTML=`
@@ -503,9 +435,7 @@ function renderClasses(){
     <div class="cards">${[...DATA.gearNotes,...DATA.profNotes].map(n=>`<article class="card tip"><div class="label">${esc(n.k)}</div><p style="margin:0">${esc(n.v)}</p></article>`).join("")}</div>`;
 }
 
-/* ---------- Legacy: the picker lives inside the planner (planner.js, plLegacyHTML); state.legacy and the lg= link key are unchanged ---------- */
-
-/* ---------- Beta log (this browser only) ---------- */
+/* ---------- Beta log (personal page, this browser only). The functions stay in both builds; only the personal page has the panel. ---------- */
 const COMMON=["Exact racial tooltips","Talent tree, ranks and costs","First professions and camp buffs","Early solo pace (kills per minute, downtime)","First dungeon for your faction (Ruins of Lordaeron or Hall of Thanes)"];
 const KEY=DATA.build.key;
 function store(k,fallback){try{const v=localStorage.getItem(KEY+"-"+k);return v?JSON.parse(v):fallback}catch(e){return fallback}}
@@ -517,12 +447,13 @@ function addToPlan(name){
   if(plan.some(c=>c.path===name)){toast("Already in your beta plan");return}
   if(plan.length>=6){toast("The beta plan holds six. Remove one first.");return}
   const p=DATA.paths.find(x=>x.name===name), t=DATA.talents.find(x=>x.Class===p.cls);
-  plan.push({title:displayName(p),path:name,extra:t?[t["Next action"]]:[]});keep("plan",plan);toast("Added to beta plan");
+  plan.push({title:displayName(p),path:name,extra:t?[t["Next action"]]:[]});keep("plan",plan);toast("Added to beta plan (under More, Beta log)");
 }
 function renderBeta(){
+  const el=$("#cohort"); if(!el)return;
   const log=loadLog(), plan=loadPlan();
-  if(!plan.length){$("#cohort").innerHTML=`<div class="empty tip">No characters yet. Open any result on “Find your main” and press <b>Add to beta plan</b>.</div>`;return}
-  $("#cohort").innerHTML=plan.map((c,ci)=>{
+  if(!plan.length){el.innerHTML=`<div class="empty tip">No characters yet. Open a path's “why?” in the list and press <b>Add to beta plan</b>.</div>`;return}
+  el.innerHTML=plan.map((c,ci)=>{
     const p=DATA.paths.find(x=>x.name===c.path), tests=[...COMMON,...c.extra], id=ti=>c.title+"|"+ti;
     const done=tests.filter((_,ti)=>(log[id(ti)]||{}).s==="Done").length;
     return `<details class="char tip" ${ci===0?"open":""}><summary><h3 style="color:${TEXT_COLOR[p.cls]}">${esc(c.title)}</h3><span class="num muted">${done}/${tests.length} done</span></summary>
@@ -530,13 +461,13 @@ function renderBeta(){
       <select id="st-${ci}-${ti}" data-id="${esc(id(ti))}" class="status-${(e.s||"Not").split(" ")[0]}" aria-label="Status for ${esc(t)}">${["Not started","Started","Done"].map(s=>`<option ${e.s===s?"selected":""}>${s}</option>`).join("")}</select>
       <textarea id="nt-${ci}-${ti}" data-id="${esc(id(ti))}" placeholder="Actual value, build number, date, log link" aria-label="Notes for ${esc(t)}">${esc(e.n||"")}</textarea></div>`}).join("")}
     <button class="btn small" data-unplan="${ci}">Remove ${esc(c.title)} from plan</button></details>`}).join("");
-  $("#cohort").querySelectorAll("select,textarea").forEach(el=>el.onchange=el.oninput=()=>{
-    const log=loadLog(),e=log[el.dataset.id]||{};if(el.tagName==="SELECT")e.s=el.value;else e.n=el.value;log[el.dataset.id]=e;keep("log",log);
-    if(el.tagName==="SELECT"&&el.dataset.saved!==el.value){el.dataset.saved=el.value;renderBeta()}
+  el.querySelectorAll("select,textarea").forEach(x=>x.onchange=x.oninput=()=>{
+    const log=loadLog(),e=log[x.dataset.id]||{};if(x.tagName==="SELECT")e.s=x.value;else e.n=x.value;log[x.dataset.id]=e;keep("log",log);
+    if(x.tagName==="SELECT"&&x.dataset.saved!==x.value){x.dataset.saved=x.value;renderBeta()}
   });
-  $("#cohort").querySelectorAll("[data-unplan]").forEach(b=>b.onclick=()=>{const plan=loadPlan();plan.splice(+b.dataset.unplan,1);keep("plan",plan);renderBeta()});
+  el.querySelectorAll("[data-unplan]").forEach(b=>b.onclick=()=>{const plan=loadPlan();plan.splice(+b.dataset.unplan,1);keep("plan",plan);renderBeta()});
 }
-$("#copyBeta").onclick=()=>{const log=loadLog();copyText(loadPlan().map(c=>c.title+"\n"+[...COMMON,...c.extra].map((t,ti)=>{const e=log[c.title+"|"+ti]||{};return `- ${t}: ${e.s||"Not started"}${e.n?" — "+e.n:""}`}).join("\n")).join("\n\n")||"No beta plan yet","Beta notes copied")};
+const copyBetaBtn=$("#copyBeta"); if(copyBetaBtn)copyBetaBtn.onclick=()=>{const log=loadLog();copyText(loadPlan().map(c=>c.title+"\n"+[...COMMON,...c.extra].map((t,ti)=>{const e=log[c.title+"|"+ti]||{};return `- ${t}: ${e.s||"Not started"}${e.n?" — "+e.n:""}`}).join("\n")).join("\n\n")||"No beta plan yet","Beta notes copied")};
 
 /* ---------- Checks and sources ---------- */
 
@@ -547,19 +478,13 @@ function renderSources(){
   $("#sources").innerHTML=`<table><thead><tr><th>Source</th><th>Type</th><th>Used for</th><th>Link or limit</th></tr></thead><tbody>${DATA.sources.map(s=>{const u=s["Boundary or status"];return `<tr><td style="font-weight:700">${esc(s["Source or input"])}</td><td>${esc(s.Type)}</td><td>${esc(s["Used for"])}</td><td>${/^https?:/.test(u)?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(new URL(u).hostname.replace("www.",""))} ↗</a>`:esc(u)}</td></tr>`}).join("")}</tbody></table>`;
 }
 
-function renderAll(){
-  renderChoices();renderFind();
-  const t=state.tab;
-  if(t==="grid")renderGrid(); if(t==="compare")renderCompare(); if(t==="races")renderRaces(); if(t==="classes")renderClasses();
-  if(t==="beta")renderBeta();  if(t==="checks")renderChecks(); if(t==="sources")renderSources(); if(t==="planner")renderPlanner();
-  $("#cmpCount").textContent=state.cmp.length?`(${state.cmp.length})`:"";
-}
+function renderAll(){renderChoices();renderFind();}
 /* ---------- Planner: talents and gear for one path (15 Sep 2026) ----------
    Data comes from planner-data.js (built by make_planner_data.py): Forever talent trees from Wowhead's BlizzCon data, items from
    WoWSims Classic (MIT) with Forever's stat rules applied. Loaded only when the planner opens, so the main page stays light. */
 const PL_SLOTS=[["Head",1],["Neck",2],["Shoulder",3],["Back",4],["Chest",5],["Wrist",6],["Hands",7],["Waist",8],["Legs",9],["Feet",10],["Ring 1",11],["Ring 2",11],["Trinket 1",12],["Trinket 2",12],["Main hand","mh"],["Off hand","oh"],["Ranged","rng"]];
 const PL_CLASS_ID={Druid:1,Hunter:2,Mage:3,Paladin:4,Priest:5,Rogue:6,Shaman:7,Warlock:8,Warrior:9};
-const PL_QCOLOR={2:"#1eff00",3:"#0070dd",4:"#a335ee",5:"#ff8000"};
+const PL_QCOLOR={2:"#1eff00",3:"#4d9eff",4:"#c07aff",5:"#ff8000"}; // item quality colours, blue and purple lifted to read on the dark ground (15 Sep UI audit)
 const PL_ARMOR_SLOTS=new Set([1,3,5,6,7,8,9,10]);
 let PL=null, plLoading=false, plWaiting=[], plOpening=false;
 state.plPick=null; state.plQ="";
@@ -603,18 +528,21 @@ function plLevelingPreset(cls,full,max){
   return res;
 }
 function plPreset(cls,spec){const full=plParseTalents(cls,PL.specs[spec].talents), max=plMaxPts(); return max>=51?full:plLevelingPreset(cls,full,max)}
-function plOpen(pathName,specName){
+/* Plan a path on the right. Called when a row is selected (userPick: scroll the planner into view on a narrow screen) and whenever
+   the choices change (the planner follows the list). The build is only reset when the path or the spec for the role changes. */
+function plOpen(pathName,specName,userPick){
   const p=DATA.paths.find(x=>x.name===pathName); if(!p)return;
-  state.tab="planner"; showTab("planner"); window.scrollTo({top:0});
-  $("#planner").innerHTML=`<div class="empty tip">Loading talent trees and items…</div>`;
+  if(userPick)state.pinned=pathName; // a path the user chose stays planned while it still fits the choices
+  if(!PL)$("#planner").innerHTML=`<div class="empty tip">Loading talent trees and items…</div>`;
   ensurePlanner(()=>{
     const spec=plSpecKey(p.cls,specName||plDefaultSpec(p,state.I)||"");
     if(!state.pl||state.pl.path!==pathName||state.pl.spec!==spec){
       const phase=state.pl&&state.pl.phase||"l60"; state.pl={path:pathName,spec,phase,t:null,gear:{},ench:{},raid:false,pvp:false,buffs:true,cons:false,deb:true}; state.pl.t=plPreset(p.cls,spec);
-      plAutofill();
+      plAutofill(); state.plPick=null;
     }
     if(!Object.values(state.legacy).some(n=>n>0))plLegacyMeta(state.I.goal);
-    state.plPick=null; writeHash(); renderPlanner();
+    writeHash(); renderPlanner(); if(typeof renderFind==="function")renderFind();
+    if(userPick&&window.matchMedia("(max-width:900px)").matches)$("#planner").scrollIntoView({block:"start",behavior:"smooth"});
   });
 }
 /* suggested Legacy spend for the goal chosen on the first tab (DATA.legacyMeta, this page's own first guess) */
@@ -700,6 +628,13 @@ function plAutofillEnch(){
   const p=DATA.paths.find(x=>x.name===state.pl.path), spec=state.pl.spec; state.pl.ench={};
   for(const [name] of PL_SLOTS){const b=plBestEnch(name,p,spec); if(b)state.pl.ench[name]=b}
 }
+/* --- 2nd and 3rd best choice per slot (15 Sep 2026: the best item is often too rare to aim for, Lionheart Helm being the example) --- */
+function plAlternates(slotName,key,p,spec,n=3){
+  const used=Object.entries(state.pl.gear).filter(([s])=>s!==slotName).map(([,id])=>id);
+  const cur=state.pl.gear[slotName];
+  return plCandidates(key,p,spec).filter(it=>!used.includes(it.id)).sort((a,b)=>plScore(b,key,spec)-plScore(a,key,spec)).slice(0,n).map((it,i)=>({it,rank:i+1,chosen:it.id===cur}));
+}
+const plSrcShort=it=>it.src?it.src.replace(/^Vendor: /,"vendor: ").replace(/^Quest: /,"quest: "):"world drop";
 const plEnchLine=e=>Object.entries(e.s).map(([k,v])=>PL.stat[k].includes("%")?`${v}${PL.stat[k]}`:`+${v} ${PL.stat[k]}`).join(", ")+(e.note?` (${e.note})`:"");
 function plStatLine(it){return Object.entries(it.s).map(([k,v])=>PL.stat[k].includes("%")?`${v}${PL.stat[k]}`:`+${v} ${PL.stat[k]}`).join(", ")+(it.d?` · ${it.d[0]}–${it.d[1]} (${plDps(it).toFixed(1)} dps, ${it.d[2]}s)`:"")+(it.fx?` · Forever: ${it.fx.join("; ")}`:"")}
 /* --- buffs, consumables and boss debuffs (Classic level-60 values; toggled in the DPS panel) --- */
@@ -768,25 +703,32 @@ function renderPlanner(){
   if(!state.pl){ // nothing planned yet: open the top-ranked path for the current choices, so the tab always shows a build
     const top=(rankAll(DATA.paths,state.I)[0]||{}).p;
     if(top&&!plOpening){plOpening=true;plOpen(top.name);plOpening=false;return}
-    el.innerHTML=`<div class="empty tip">Pick a path on “Find your main” and press <b>Plan talents &amp; gear</b>.</div>`;return}
+    el.innerHTML=`<div class="empty tip">Select a path in the list on the left to plan it here.</div>`;return}
   if(!PL){ensurePlanner(renderPlanner);return}
   if(!state.pl.t)plRestore();
   const p=DATA.paths.find(x=>x.name===state.pl.path), spec=state.pl.spec, sp=PL.specs[spec], trees=PL.trees[p.cls], sorted=plSorted(p.cls), total=plTotal();
   const fv=PL.forever[p.cls]||{talents:{},new:[],notes:[]}, ftal=fv.talents||{};
   const specs=Object.keys(PL.specs).filter(k=>PL.specs[k].cls===p.cls);
   const icon=(ic,size="medium")=>`https://wow.zamimg.com/images/wow/icons/${size}/${ic}.jpg`;
+  // Every change rebuilds this panel, which would drop keyboard focus to the top of the page (15 Sep UI audit): remember where focus was.
+  const act=document.activeElement, actTal=act&&act.closest&&act.closest(".tal");
+  const fKey=act&&el.contains(act)?(act.id?`#${act.id}`:actTal?`.tal[data-ti="${actTal.dataset.ti}"][data-i="${actTal.dataset.i}"]${act.dataset.d?` [data-d="${act.dataset.d}"]`:""}`:act.dataset.lg?`[data-lg="${act.dataset.lg}"][data-d="${act.dataset.d}"]`:act.dataset.spec?`[data-spec="${act.dataset.spec}"]`:act.dataset.phase?`[data-phase="${act.dataset.phase}"]`:act.dataset.pick?`[data-pick="${act.dataset.pick}"]`:null):null;
   el.innerHTML=`
   <div class="pl-head tip">
-    <div><div class="label">Planning</div><h2 style="margin:0;color:${TEXT_COLOR[p.cls]}">${esc(displayName(p))}</h2><div class="muted">${esc(p.faction)} · ${esc(p.roles)}</div></div>
+    <div><div class="label">Planning</div><h2 style="margin:0;color:${TEXT_COLOR[p.cls]}">${esc(displayName(p))}</h2><div class="muted" style="font-size:14px"><span class="fac-${esc(p.faction)}">${esc(p.faction)}</span> · ${esc(p.roles)} · fit <b class="num" style="color:${tierColor(fitScore(p,state.I))}">${fitScore(p,state.I)}</b></div></div>
     <div><div class="label">Phase</div><div class="chips">${Object.entries(PL.phases).map(([k,ph])=>`<button class="chip" data-phase="${k}" aria-pressed="${k===state.pl.phase}" title="${esc(ph.level<60?`Level ${ph.level}: ${ph.pts} talent points, items up to item level ${ph.ilvl}`:ph.raid?"Level 60 with the raid tier (Classic Molten Core and Onyxia items stand in for the Forever raids)":"Level 60, dungeon, quest, crafted and world items")}">${esc(ph.label)}</button>`).join("")}</div></div>
     <div><div class="label">Spec</div><div class="chips">${specs.map(k=>`<button class="chip" data-spec="${esc(k)}" aria-pressed="${k===spec}">${esc(k.replace(/ \(.*\)$/,""))}</button>`).join("")}</div></div>
-    <div class="chips"><button class="btn small" id="plPreset" ${sp.talents?"":"disabled"}>Load suggested talents</button><button class="btn small" id="plClearT">Clear talents</button><button class="btn small" id="plAuto">Suggest starter gear</button>${plPhase().raid?`<span class="muted" style="font-size:14px;align-self:center">raid tier included</span>`:`<label class="muted" style="font-size:14px;align-self:center"><input type="checkbox" id="plRaid" ${state.pl.raid?"checked":""}> include raid-tier items</label>`}<label class="muted" style="font-size:14px;align-self:center"><input type="checkbox" id="plPvp" ${state.pl.pvp?"checked":""}> include PvP rank rewards</label><button class="btn small" id="plLink">Copy link to this build</button></div>
+    <div class="pl-actions"><button class="btn small" id="plPreset" ${sp.talents?"":"disabled"}>Load suggested talents</button><button class="btn small" id="plClearT">Clear talents</button><button class="btn small" id="plAuto">Suggest starter gear</button>${plPhase().raid?`<span class="muted" style="font-size:13px">raid tier included</span>`:`<label><input type="checkbox" id="plRaid" ${state.pl.raid?"checked":""}> include raid-tier items</label>`}<label><input type="checkbox" id="plPvp" ${state.pl.pvp?"checked":""}> include PvP rank rewards</label><button class="btn small" id="plLink">Copy link to this build</button></div>
+    <details class="pl-about"><summary>Where these suggestions come from, and what the marks mean</summary>
+      <p>${esc(PL.credit)} ${sp.talents?"The suggested talents are this page's own first build on the Forever trees, written from the talent text before anyone has played it; no guide has published Forever builds yet.":"No suggested build for this spec yet; place the points yourself."}</p>
+      <p>Starter gear is picked by this page's own stat weights from Classic dungeon, quest, crafted, vendor and world items up to item level 65${state.pl.raid?", plus raid-tier items":""}${state.pl.pvp?", plus PvP rank rewards":""}. Forever's new dungeons and reworked loot are not in any database yet. Hover a talent for its text, and an item for its Wowhead Forever tooltip; item links open Wowhead's Forever database, which will refresh from the beta and launch clients.</p>
+      <p><b class="fx fx-new">N</b> marks a talent that is new in Forever. <b class="fx">F</b> marks one with a reported change, listed under “What Forever changes”. Every change you make here saves in the page link.</p>
+    </details>
   </div>
-  <p class="muted" style="font-size:14px">${esc(PL.credit)} ${sp.talents?"The suggested talents are this page's own first build on the Forever trees, written from the talent text before anyone has played it; no guide has published Forever builds yet.":"No suggested build for this spec yet; place the points yourself."} Starter gear is picked by this page's own stat weights from Classic dungeon, quest, crafted, vendor and world items up to item level 65${state.pl.raid?", plus raid-tier items":""}${state.pl.pvp?", plus PvP rank rewards":""}; Forever's new dungeons and reworked loot are not in any database yet. Hover a talent for its text, and an item for its Classic tooltip. <b class="fx fx-new">N</b> marks a talent that is new in Forever; <b class="fx">F</b> marks one with a reported change listed below the stats.</p>
   <div class="pl-points"><span class="num">${total} / ${plMaxPts()}</span> points at level ${plLevel()}, <span class="num">${plMaxPts()-total}</span> left · ${trees.map((t,ti)=>`${esc(t.name)} <b class="num">${state.pl.t[ti].reduce((a,b)=>a+b,0)}</b>`).join(" · ")} <span class="muted">· click a talent to add a point, right-click or − to take one back</span></div>
   <div class="pl-talents">
       ${trees.map((t,ti)=>`<div class="tree tip"><h3>${esc(t.name)} <span class="num muted">${state.pl.t[ti].reduce((a,b)=>a+b,0)}</span></h3><div class="tgrid">${sorted[ti].map((x,i)=>{const pts=state.pl.t[ti][i], can=plCanAdd(p.cls,ti,i), st=pts>=x.max?"maxed":pts?"part":can?"avail":"locked";
-        const fx=ftal[x.n]; return `<div class="tal ${st}${fx?" has-fx":""}${x.new?" is-new":""}" style="grid-row:${x.r+1};grid-column:${x.c+1}" data-ti="${ti}" data-i="${i}" title="${esc(plTalentTip(x,pts,sorted[ti],fx))}">${fx?`<b class="fx" aria-label="Forever change">F</b>`:x.new?`<b class="fx fx-new" aria-label="New in Forever">N</b>`:""}<img src="${icon(x.ic,"medium")}" alt=""><div class="tn">${esc(x.n)}</div><div class="tp"><button aria-label="Remove a point from ${esc(x.n)}" data-d="-1" ${pts?"":"disabled"}>−</button><span class="num">${pts}/${x.max}</span><button aria-label="Add a point to ${esc(x.n)}" data-d="1" ${can?"":"disabled"}>+</button></div></div>`}).join("")}</div></div>`).join("")}
+        const fx=ftal[x.n]; return `<div class="tal ${st}${fx?" has-fx":""}${x.new?" is-new":""}" style="grid-row:${x.r+1};grid-column:${x.c+1}" data-ti="${ti}" data-i="${i}" tabindex="0" role="button" aria-label="${esc(x.n)}, ${pts} of ${x.max}${st==="locked"?", locked":""}" title="${esc(plTalentTip(x,pts,sorted[ti],fx))}">${fx?`<b class="fx" aria-label="Forever change">F</b>`:x.new?`<b class="fx fx-new" aria-label="New in Forever">N</b>`:""}<img src="${icon(x.ic,"medium")}" alt=""><div class="tn">${esc(x.n)}</div><div class="tp"><button aria-label="Remove a point from ${esc(x.n)}" data-d="-1" ${pts?"":"disabled"}>−</button><span class="num">${pts}/${x.max}</span><button aria-label="Add a point to ${esc(x.n)}" data-d="1" ${can?"":"disabled"}>+</button></div></div>`}).join("")}</div></div>`).join("")}
   </div>
   <div class="pl-grid">
     <div class="pl-side">
@@ -798,7 +740,7 @@ function renderPlanner(){
       ${plForeverHTML(p.cls,fv)}
     </div>
       <div class="tip pl-gear"><h3>Gear</h3>${PL_SLOTS.map(([name,key])=>{const id=state.pl.gear[name], it=id&&plItem(id), open=state.plPick===name;
-        return `<div class="slot"><img src="${it?icon(it.ic,"small"):"data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="}" alt="" width="28" height="28"><div><div class="label">${esc(name)}</div>${it?`<a href="https://www.wowhead.com/classic/item=${it.id}" data-wowhead="item=${it.id}&domain=classic" target="_blank" rel="noopener" style="color:${PL_QCOLOR[it.q]||"#fff"};font-weight:700">${esc(it.n)}</a> <span class="muted">ilvl ${it.il}</span><div class="muted" style="font-size:13px">${esc(plStatLine(it))}${it.src?` · ${esc(it.src)}`:""}</div>${(list=>list.length?`<div class="muted" style="font-size:13px">Enchant: <select data-ench="${esc(name)}"><option value="">none</option>${list.sort((a,b)=>plEnchScore(b,spec)-plEnchScore(a,spec)).map(e=>`<option value="${e.id}" ${state.pl.ench[name]===e.id?"selected":""}>${esc(e.n.replace(/^Enchant \w+( Weapon)? - /,""))} (${esc(plEnchLine(e))})</option>`).join("")}</select></div>`:"")(plEnchCandidates(name,it,p))}`:`<span class="muted">${name==="Off hand"&&(id2=>{const m=id2&&plItem(id2);return m&&m.h===4})(state.pl.gear["Main hand"])?"Two-handed weapon in use":"Empty"}</span>`}</div><div class="chips"><button class="btn small" data-pick="${esc(name)}">${open?"Close":"Change"}</button>${it?`<button class="btn small" data-clear="${esc(name)}">Clear</button>`:""}</div></div>
+        return `<div class="slot"><img src="${it?icon(it.ic,"small"):"data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="}" alt="" width="28" height="28"><div><div class="label">${esc(name)}</div>${it?`<a href="https://www.wowhead.com/forever/item=${it.id}" data-wowhead="item=${it.id}&domain=forever" target="_blank" rel="noopener" style="color:${PL_QCOLOR[it.q]||"#fff"};font-weight:700">${esc(it.n)}</a> <span class="muted">ilvl ${it.il}</span><div class="muted" style="font-size:13px">${esc(plStatLine(it))}${it.src?` · ${esc(it.src)}`:""}</div>${(alts=>alts.length>1?`<div class="muted alts" style="font-size:13px">${alts.map(a=>a.chosen?`<span>${a.rank===1?"best":a.rank===2?"2nd":"3rd"}: <b>${esc(a.it.n)}</b> (chosen)</span>`:`<span>${a.rank===1?"best":a.rank===2?"2nd":"3rd"}: <a href="https://www.wowhead.com/forever/item=${a.it.id}" data-wowhead="item=${a.it.id}&domain=forever" target="_blank" rel="noopener" style="color:${PL_QCOLOR[a.it.q]||"#fff"}">${esc(a.it.n)}</a> <span class="muted">${esc(plSrcShort(a.it))}</span> <button class="btn small" data-use="${a.it.id}" data-slot="${esc(name)}">Use</button></span>`).join(" · ")}</div>`:"")(plAlternates(name,key,p,spec))}${(list=>list.length?`<div class="muted" style="font-size:13px">Enchant: <select data-ench="${esc(name)}" aria-label="Enchant for ${esc(name)}"><option value="">none</option>${list.sort((a,b)=>plEnchScore(b,spec)-plEnchScore(a,spec)).map(e=>`<option value="${e.id}" ${state.pl.ench[name]===e.id?"selected":""}>${esc(e.n.replace(/^Enchant \w+( Weapon)? - /,""))} (${esc(plEnchLine(e))})</option>`).join("")}</select></div>`:"")(plEnchCandidates(name,it,p))}`:`<span class="muted">${name==="Off hand"&&(id2=>{const m=id2&&plItem(id2);return m&&m.h===4})(state.pl.gear["Main hand"])?"Two-handed weapon in use":"Empty"}</span>`}</div><div class="chips"><button class="btn small" data-pick="${esc(name)}">${open?"Close":"Change"}</button>${it?`<button class="btn small" data-clear="${esc(name)}">Clear</button>`:""}</div></div>
         ${open?plPickerHTML(name,key,p,spec):""}`}).join("")}</div>
   </div>`;
   el.querySelectorAll("[data-spec]").forEach(b=>b.onclick=()=>{const k=b.dataset.spec; state.pl.spec=k; state.pl.t=plPreset(p.cls,k); plAutofill(); writeHash(); renderPlanner()});
@@ -816,19 +758,22 @@ function renderPlanner(){
   const lm=$("#plLegacyMeta"); if(lm)lm.onclick=()=>{plLegacyMeta(state.I.goal);writeHash();renderPlanner()};
   el.querySelectorAll(".tal").forEach(c=>{const ti=+c.dataset.ti,i=+c.dataset.i;
     c.onclick=e=>{const d=e.target.closest("[data-d]"); if(d){plChange(p.cls,ti,i,+d.dataset.d);return} plChange(p.cls,ti,i,1)};
-    c.oncontextmenu=e=>{e.preventDefault();plChange(p.cls,ti,i,-1)}});
+    c.oncontextmenu=e=>{e.preventDefault();plChange(p.cls,ti,i,-1)};
+    c.onkeydown=e=>{if(e.target!==c)return; if(e.key==="Enter"||e.key===" "||e.key==="+"){e.preventDefault();plChange(p.cls,ti,i,1)} else if(e.key==="Backspace"||e.key==="Delete"||e.key==="-"){e.preventDefault();plChange(p.cls,ti,i,-1)}}});
   el.querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>{state.plPick=state.plPick===b.dataset.pick?null:b.dataset.pick;state.plQ="";renderPlanner();if(state.plPick)$("#plQ")?.focus()});
   el.querySelectorAll("[data-clear]").forEach(b=>b.onclick=()=>{delete state.pl.gear[b.dataset.clear];delete state.pl.ench[b.dataset.clear];writeHash();renderPlanner()});
   const choose=n=>{state.pl.gear[state.plPick]=+n; const b=plBestEnch(state.plPick,p,spec); if(b)state.pl.ench[state.plPick]=b; else delete state.pl.ench[state.plPick]; state.plPick=null;writeHash();renderPlanner()};
   el.querySelectorAll("[data-choose]").forEach(b=>b.onclick=()=>choose(b.dataset.choose));
+  el.querySelectorAll("[data-use]").forEach(b=>b.onclick=()=>{state.plPick=b.dataset.slot;choose(b.dataset.use)});
   const q=$("#plQ"); if(q){q.value=state.plQ;q.oninput=()=>{state.plQ=q.value;const list=$("#plList");if(list)list.innerHTML=plPickerRows(state.plPick,PL_SLOTS.find(s=>s[0]===state.plPick)[1],p,spec);el.querySelectorAll("[data-choose]").forEach(b=>b.onclick=()=>choose(b.dataset.choose))}}
+  if(fKey){const f=el.querySelector(fKey); if(f&&!f.disabled)f.focus({preventScroll:true})}
   if(window.$WowheadPower)try{window.$WowheadPower.refreshLinks()}catch(e){}
 }
 function plPickerRows(name,key,p,spec){
   const used=Object.entries(state.pl.gear).filter(([n])=>n!==name).map(([,id])=>id), q=state.plQ.trim().toLowerCase();
   const list=plCandidates(key,p,spec).filter(it=>!used.includes(it.id)&&(!q||it.n.toLowerCase().includes(q))).sort((a,b)=>plScore(b,key,spec)-plScore(a,key,spec)).slice(0,40);
   if(!list.length)return `<div class="muted">Nothing matches.</div>`;
-  return list.map(it=>`<div class="pick"><img src="https://wow.zamimg.com/images/wow/icons/small/${it.ic}.jpg" alt="" width="24" height="24"><div><a href="https://www.wowhead.com/classic/item=${it.id}" data-wowhead="item=${it.id}&domain=classic" target="_blank" rel="noopener" style="color:${PL_QCOLOR[it.q]||"#fff"};font-weight:700">${esc(it.n)}</a> <span class="muted">ilvl ${it.il}${it.raid?" · raid":""}</span><div class="muted" style="font-size:13px">${esc(plStatLine(it))}${it.src?` · ${esc(it.src)}`:""}</div></div><button class="btn small" data-choose="${it.id}">Choose</button></div>`).join("");
+  return list.map(it=>`<div class="pick"><img src="https://wow.zamimg.com/images/wow/icons/small/${it.ic}.jpg" alt="" width="24" height="24"><div><a href="https://www.wowhead.com/forever/item=${it.id}" data-wowhead="item=${it.id}&domain=forever" target="_blank" rel="noopener" style="color:${PL_QCOLOR[it.q]||"#fff"};font-weight:700">${esc(it.n)}</a> <span class="muted">ilvl ${it.il}${it.raid?" · raid":""}</span><div class="muted" style="font-size:13px">${esc(plStatLine(it))}${it.src?` · ${esc(it.src)}`:""}</div></div><button class="btn small" data-choose="${it.id}">Choose</button></div>`).join("");
 }
 function plPickerHTML(name,key,p,spec){
   return `<div class="picker tip"><input id="plQ" type="search" placeholder="Search ${esc(name.toLowerCase())} items" aria-label="Search items"><div id="plList">${plPickerRows(name,key,p,spec)}</div><div class="muted" style="font-size:13px;margin-top:6px">Sorted by this spec's stat weights. Showing the top 40.</div></div>`;
@@ -853,13 +798,14 @@ function plForeverHTML(cls,fv){
   const li=(x)=>`<li>${esc(x.v)} ${plSrc(x.src)}</li>`;
   const changed=Object.entries(fv.talents||{}).map(([n,x])=>`<li><b>${esc(n)}:</b> ${esc(x.v)} ${plSrc(x.src)}</li>`).join("");
   const added=(fv.new||[]).map(li).join(""), notes=(fv.notes||[]).map(li).join(""), gen=(PL.forever.general||[]).map(li).join("");
-  return `<div class="tip pl-forever"><h3>What Forever changes for ${esc(cls)}</h3>
-    <p class="muted" style="font-size:13px;margin:0 0 6px">Reported as of ${esc(PL.asOf)}. The tree above is Forever's BlizzCon version; these notes are the wider reporting and do not change any number.</p>
+  const n=Object.keys(fv.talents||{}).length+(fv.new||[]).length+(fv.notes||[]).length;
+  return `<details class="tip pl-forever"><summary><h3>What Forever changes for ${esc(cls)}</h3> <span class="muted" style="font-size:13px">${n} reported changes, as of ${esc(PL.asOf)}</span></summary>
+    <p class="muted" style="font-size:13px;margin:6px 0">The tree above is Forever's BlizzCon version; these notes are the wider reporting and do not change any number.</p>
     ${changed?`<div class="label">Changed talents</div><ul>${changed}</ul>`:""}
     ${added?`<div class="label">New talents and abilities</div><ul>${added}</ul>`:""}
     ${notes?`<div class="label">Also</div><ul>${notes}</ul>`:""}
     <details><summary class="label" style="cursor:pointer">Items, stats and talents in general</summary><ul>${gen}</ul></details>
-  </div>`;
+  </details>`;
 }
 
 
@@ -1161,7 +1107,10 @@ function plDpsEstimate(p,spec,S){
 
 $("#dataDate").textContent=DATA.asOf;
 readHash();
-showTab(document.querySelector(`nav.tabs button[data-tab="${state.tab}"]`)?state.tab:"find");renderAll();
-if(state.pl&&!state.pl.t)ensurePlanner(()=>{if(!state.pl.t)plRestore();if(state.tab==="planner")renderPlanner()});
+renderAll();
+if(state.more){const m=state.more;state.more=null;showMore(m)} // showMore toggles, so start from closed
+// The planner always shows a build: the one in the link, or the best fit for the choices.
+if(state.pl&&!state.pl.t)ensurePlanner(()=>{if(!state.pl.t)plRestore();renderPlanner();renderFind()});
+else syncPlanner();
 </script>
 </html>
