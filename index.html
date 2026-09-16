@@ -138,7 +138,12 @@ details.char summary::-webkit-details-marker{display:none}
 .pl-actions{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center;margin-top:var(--s3);padding-top:var(--s3);border-top:1px solid var(--frame);width:100%}
 .pl-actions label{font-size:13px;color:var(--ink-2)}
 .pl-about{margin:var(--s2) 0 0;font-size:13px;color:var(--ink-3)} .pl-about summary{cursor:pointer;color:var(--ink-2)} .pl-about p{margin:6px 0 0;max-width:90ch}
-.pl-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:var(--s3);margin-top:var(--s3)}
+.pl-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:var(--s3);margin-top:var(--s3)} .pl-grid.one{grid-template-columns:1fr}
+/* 16 Sep 2026, UX audit follow-ups: sticky one-line build summary with fold chips; one talent tree at a time on a phone; bigger Use buttons for touch */
+.pl-summary{position:sticky;top:0;z-index:6;display:flex;flex-wrap:wrap;gap:var(--s1) var(--s2);align-items:center;margin:var(--s3) 0 0;padding:6px 10px;background:var(--night);border:1px solid var(--frame);border-radius:4px;font-size:14px;box-shadow:0 4px 12px #0008}
+.pl-summary .pl-sumname{font-family:var(--display);font-size:16px} .pl-summary .pl-fold{margin-left:auto}
+.pl-treetabs{display:none;margin:0 0 var(--s2)}
+@media (max-width:700px){.pl-treetabs{display:flex}.pl-talents .tree:not(.is-cur){display:none}}
 @media (max-width:1180px){.pl-grid{grid-template-columns:1fr}}
 .pl-points{margin:var(--s3) 0 var(--s2);font-size:14px;color:var(--ink-2)}
 .pl-talents{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s3)}
@@ -170,6 +175,8 @@ details.char summary::-webkit-details-marker{display:none}
 @media (max-width:560px){.pl-statgrid{grid-template-columns:auto auto}}
 .slot{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--frame)}
 .slot .alts{margin-top:3px;line-height:1.7} .slot .alts .btn{padding:1px 7px;font-size:12px;line-height:1.4;min-height:22px;vertical-align:1px}
+/* touch and phone sizes for the small buttons; these sit after the base rules above so they win at equal specificity (16 Sep 2026) */
+@media (max-width:700px),(pointer:coarse){.tal .tp button{width:30px;height:30px}.slot .alts .btn{padding:6px 10px;min-height:30px;font-size:13px}}
 .pl-forever summary{cursor:pointer} .pl-forever summary h3{display:inline}
 .slot select{max-width:100%;width:100%;box-sizing:border-box;background:#0f1424;border:1px solid var(--frame-hi);color:inherit;border-radius:3px;padding:3px 4px;font-size:13px;margin-top:2px}
 .slot img{border-radius:3px}
@@ -334,15 +341,12 @@ const specFor=(p,I)=>{const s=DATA.specs.find(x=>x.Class===p.cls);const r=s&&s[I
 
 /* ---------- Choices ---------- */
 function renderChoices(){
-  const el=$("#choices"), narrow=window.matchMedia("(max-width:900px)").matches;
-  if(state.chOpen==null)state.chOpen=!narrow; // on a phone the 42 chips would push the list below the fold, so start folded to a summary line
-  const summary=Object.entries(OPTS).map(([k,o])=>state.I[k]).filter(v=>v!=="Any"&&v!=="None").join(" · ")||"Everything, no filters";
-  el.innerHTML=`<div class="ch-head"><div class="label" style="color:var(--gold-soft)">Your choices</div>${narrow?`<button class="btn small quiet" id="chToggle" aria-expanded="${state.chOpen}">${state.chOpen?"Done":"Change"}</button>`:""}</div>`+
-    (state.chOpen?Object.entries(OPTS).map(([k,o])=>`<div class="choice"><div class="label" id="lab-${k}">${o.label}</div><div class="chips" role="group" aria-labelledby="lab-${k}">${o.v.map(v=>`<button class="chip" id="opt-${k}-${esc(v).replace(/\W/g,"")}" data-k="${k}" data-v="${esc(v)}" aria-pressed="${state.I[k]===v}">${esc(v)}</button>`).join("")}</div></div>`).join("")+
-    `<div class="foot"><button class="btn small" id="copyLink">Copy link</button><button class="btn small quiet" id="resetChoices">Reset</button></div>`:`<div class="muted" style="font-size:14px">${esc(summary)}</div>`);
+  const el=$("#choices");
+  // Every choice group stays visible at every width (owner decision, 15 Sep 2026 about 9:45 PM: the choices are never folded away).
+  el.innerHTML=`<div class="ch-head"><div class="label" style="color:var(--gold-soft)">Your choices</div></div>`+
+    Object.entries(OPTS).map(([k,o])=>`<div class="choice"><div class="label" id="lab-${k}">${o.label}</div><div class="chips" role="group" aria-labelledby="lab-${k}">${o.v.map(v=>`<button class="chip" id="opt-${k}-${esc(v).replace(/\W/g,"")}" data-k="${k}" data-v="${esc(v)}" aria-pressed="${state.I[k]===v}">${esc(v)}</button>`).join("")}</div></div>`).join("")+
+    `<div class="foot"><button class="btn small" id="copyLink">Copy link</button><button class="btn small quiet" id="resetChoices">Reset</button></div>`;
   el.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{state.I[b.dataset.k]=b.dataset.v;state.open=null;writeHash();renderChoices();renderFind();syncPlanner()});
-  const ct=$("#chToggle"); if(ct)ct.onclick=()=>{state.chOpen=!state.chOpen;renderChoices()};
-  if(!state.chOpen)return;
   $("#copyLink").onclick=()=>copyText(location.href,"Link copied. It holds your choices and the build on the right.");
   $("#resetChoices").onclick=()=>{state.I={...DEFAULTS};state.open=null;state.pinned=null;writeHash();renderChoices();renderFind();syncPlanner()};
 }
@@ -538,7 +542,7 @@ function plOpen(pathName,specName,userPick){
     const spec=plSpecKey(p.cls,specName||plDefaultSpec(p,state.I)||"");
     if(!state.pl||state.pl.path!==pathName||state.pl.spec!==spec){
       const phase=state.pl&&state.pl.phase||"l60"; state.pl={path:pathName,spec,phase,t:null,gear:{},ench:{},raid:false,pvp:false,buffs:true,cons:false,deb:true}; state.pl.t=plPreset(p.cls,spec);
-      plAutofill(); state.plPick=null;
+      plAutofill(); state.plPick=null; state.plTree=undefined;
     }
     if(!Object.values(state.legacy).some(n=>n>0))plLegacyMeta(state.I.goal);
     writeHash(); renderPlanner(); if(typeof renderFind==="function")renderFind();
@@ -709,10 +713,14 @@ function renderPlanner(){
   const p=DATA.paths.find(x=>x.name===state.pl.path), spec=state.pl.spec, sp=PL.specs[spec], trees=PL.trees[p.cls], sorted=plSorted(p.cls), total=plTotal();
   const fv=PL.forever[p.cls]||{talents:{},new:[],notes:[]}, ftal=fv.talents||{};
   const specs=Object.keys(PL.specs).filter(k=>PL.specs[k].cls===p.cls);
+  // 16 Sep 2026 (UX audit follow-ups): a sticky one-line summary, foldable sections (state.plFold, not saved in the link), one tree at a time on a phone (state.plTree)
+  state.plFold=state.plFold||{}; const stAll=plStats(p), estAll=plDpsEstimate(p,spec,stAll.S);
+  const treePts=trees.map((t,ti)=>state.pl.t[ti].reduce((a,b)=>a+b,0)), curTree=state.plTree!=null&&state.plTree<trees.length?state.plTree:treePts.indexOf(Math.max(...treePts));
+  const foldChip=(k,l)=>`<button class="chip" data-fold="${k}" aria-pressed="${!state.plFold[k]}" aria-controls="plSec-${k}" title="${state.plFold[k]?"Show":"Hide"} ${l.toLowerCase()}">${l}</button>`;
   const icon=(ic,size="medium")=>`https://wow.zamimg.com/images/wow/icons/${size}/${ic}.jpg`;
   // Every change rebuilds this panel, which would drop keyboard focus to the top of the page (15 Sep UI audit): remember where focus was.
   const act=document.activeElement, actTal=act&&act.closest&&act.closest(".tal");
-  const fKey=act&&el.contains(act)?(act.id?`#${act.id}`:actTal?`.tal[data-ti="${actTal.dataset.ti}"][data-i="${actTal.dataset.i}"]${act.dataset.d?` [data-d="${act.dataset.d}"]`:""}`:act.dataset.lg?`[data-lg="${act.dataset.lg}"][data-d="${act.dataset.d}"]`:act.dataset.spec?`[data-spec="${act.dataset.spec}"]`:act.dataset.phase?`[data-phase="${act.dataset.phase}"]`:act.dataset.pick?`[data-pick="${act.dataset.pick}"]`:null):null;
+  const fKey=act&&el.contains(act)?(act.id?`#${act.id}`:actTal?`.tal[data-ti="${actTal.dataset.ti}"][data-i="${actTal.dataset.i}"]${act.dataset.d?` [data-d="${act.dataset.d}"]`:""}`:act.dataset.lg?`[data-lg="${act.dataset.lg}"][data-d="${act.dataset.d}"]`:act.dataset.spec?`[data-spec="${act.dataset.spec}"]`:act.dataset.phase?`[data-phase="${act.dataset.phase}"]`:act.dataset.pick?`[data-pick="${act.dataset.pick}"]`:act.dataset.fold?`[data-fold="${act.dataset.fold}"]`:act.dataset.tree?`[data-tree="${act.dataset.tree}"]`:null):null;
   el.innerHTML=`
   <div class="pl-head tip">
     <div><div class="label">Planning</div><h2 style="margin:0;color:${TEXT_COLOR[p.cls]}">${esc(displayName(p))}</h2><div class="muted" style="font-size:14px"><span class="fac-${esc(p.faction)}">${esc(p.faction)}</span> · ${esc(p.roles)} · fit <b class="num" style="color:${tierColor(fitScore(p,state.I))}">${fitScore(p,state.I)}</b></div></div>
@@ -725,25 +733,32 @@ function renderPlanner(){
       <p><b class="fx fx-new">N</b> marks a talent that is new in Forever. <b class="fx">F</b> marks one with a reported change, listed under “What Forever changes”. Every change you make here saves in the page link.</p>
     </details>
   </div>
+  <div class="pl-summary" role="region" aria-label="Build summary"><span class="pl-sumname" style="color:${TEXT_COLOR[p.cls]}">${esc(displayName(p))}</span><span class="muted">·</span><span>${esc(spec.replace(/ \(.*\)$/,""))}</span><span class="muted">·</span><span>${esc(plPhase().label)}</span><span class="muted">·</span><span><span class="num">${total}/${plMaxPts()}</span> points</span><span class="muted">·</span><b class="num pl-sumdps" style="color:var(--gold)">${estAll.none?esc(estAll.none==="tank"||estAll.none==="healer"?"no estimate for a "+estAll.none:"no estimate"):Math.round(estAll.total)+" DPS"}</b>
+    <span class="chips pl-fold">${foldChip("tal","Talents")}${foldChip("gear","Gear")}${foldChip("stats","Stats")}${foldChip("dps","Damage")}${foldChip("legacy","Legacy")}</span></div>
+  <section id="plSec-tal" ${state.plFold.tal?"hidden":""}>
   <div class="pl-points"><span class="num">${total} / ${plMaxPts()}</span> points at level ${plLevel()}, <span class="num">${plMaxPts()-total}</span> left · ${trees.map((t,ti)=>`${esc(t.name)} <b class="num">${state.pl.t[ti].reduce((a,b)=>a+b,0)}</b>`).join(" · ")} <span class="muted">· click a talent to add a point, right-click or − to take one back</span></div>
+  <div class="chips pl-treetabs" aria-label="Talent tree, one at a time on a phone">${trees.map((t,ti)=>`<button class="chip" data-tree="${ti}" aria-pressed="${ti===curTree}">${esc(t.name)} <span class="num">${treePts[ti]}</span></button>`).join("")}</div>
   <div class="pl-talents">
-      ${trees.map((t,ti)=>`<div class="tree tip"><h3>${esc(t.name)} <span class="num muted">${state.pl.t[ti].reduce((a,b)=>a+b,0)}</span></h3><div class="tgrid">${sorted[ti].map((x,i)=>{const pts=state.pl.t[ti][i], can=plCanAdd(p.cls,ti,i), st=pts>=x.max?"maxed":pts?"part":can?"avail":"locked";
+      ${trees.map((t,ti)=>`<div class="tree tip${ti===curTree?" is-cur":""}"><h3>${esc(t.name)} <span class="num muted">${state.pl.t[ti].reduce((a,b)=>a+b,0)}</span></h3><div class="tgrid">${sorted[ti].map((x,i)=>{const pts=state.pl.t[ti][i], can=plCanAdd(p.cls,ti,i), st=pts>=x.max?"maxed":pts?"part":can?"avail":"locked";
         const fx=ftal[x.n]; return `<div class="tal ${st}${fx?" has-fx":""}${x.new?" is-new":""}" style="grid-row:${x.r+1};grid-column:${x.c+1}" data-ti="${ti}" data-i="${i}" tabindex="0" role="button" aria-label="${esc(x.n)}, ${pts} of ${x.max}${st==="locked"?", locked":""}" title="${esc(plTalentTip(x,pts,sorted[ti],fx))}">${fx?`<b class="fx" aria-label="Forever change">F</b>`:x.new?`<b class="fx fx-new" aria-label="New in Forever">N</b>`:""}<img src="${icon(x.ic,"medium")}" alt=""><div class="tn">${esc(x.n)}</div><div class="tp"><button aria-label="Remove a point from ${esc(x.n)}" data-d="-1" ${pts?"":"disabled"}>−</button><span class="num">${pts}/${x.max}</span><button aria-label="Add a point to ${esc(x.n)}" data-d="1" ${can?"":"disabled"}>+</button></div></div>`}).join("")}</div></div>`).join("")}
   </div>
-  <div class="pl-grid">
+  </section>
+  <div class="pl-grid${state.plFold.gear?" one":""}">
     <div class="pl-side">
-      ${(st=>`<div class="tip pl-stats"><h3>Stats at level ${plLevel()} with this build</h3><div class="pl-statgrid">${st.rows.map(([l,v])=>`<span>${esc(l)}</span><b class="num">${esc(v)}</b>`).join("")}</div>
+      ${(st=>`<div id="plSec-stats" ${state.plFold.stats?"hidden":""}><div class="tip pl-stats"><h3>Stats at level ${plLevel()} with this build</h3><div class="pl-statgrid">${st.rows.map(([l,v])=>`<span>${esc(l)}</span><b class="num">${esc(v)}</b>`).join("")}</div>
       ${st.effects.length?`<div class="label" style="margin-top:8px">Also from talents and racials</div><div class="muted" style="font-size:13px">${st.effects.map(esc).join(" · ")}</div>`:""}
-      <p class="muted" style="font-size:13px;margin:8px 0 0">${plLevel()<60?"Level-60 base numbers scaled to level "+plLevel()+" (provisional until a beta character is looked at)":"Classic level-60 base numbers"} plus race, gear, enchants, talents (${st.sources.length?esc(st.sources.slice(0,6).join(", "))+(st.sources.length>6?"…":""):"none with a stat effect yet"}), Legacy perks${state.pl.buffs?", raid buffs":""}${state.pl.cons?", consumables":""}. Change a talent, perk or item and every number here moves.</p></div>
-      ${plDpsHTML(p,spec,st.S)}
-      ${plLegacyHTML()}`)(plStats(p))}
+      <p class="muted" style="font-size:13px;margin:8px 0 0">${plLevel()<60?"Level-60 base numbers scaled to level "+plLevel()+" (provisional until a beta character is looked at)":"Classic level-60 base numbers"} plus race, gear, enchants, talents (${st.sources.length?esc(st.sources.slice(0,6).join(", "))+(st.sources.length>6?"…":""):"none with a stat effect yet"}), Legacy perks${state.pl.buffs?", raid buffs":""}${state.pl.cons?", consumables":""}. Change a talent, perk or item and every number here moves.</p></div></div>
+      <div id="plSec-dps" ${state.plFold.dps?"hidden":""}>${plDpsHTML(p,spec,st.S)}</div>
+      <div id="plSec-legacy" ${state.plFold.legacy?"hidden":""}>${plLegacyHTML()}</div>`)(stAll)}
       ${plForeverHTML(p.cls,fv)}
     </div>
-      <div class="tip pl-gear"><h3>Gear</h3>${PL_SLOTS.map(([name,key])=>{const id=state.pl.gear[name], it=id&&plItem(id), open=state.plPick===name;
+      <div class="tip pl-gear" id="plSec-gear" ${state.plFold.gear?"hidden":""}><h3>Gear</h3>${PL_SLOTS.map(([name,key])=>{const id=state.pl.gear[name], it=id&&plItem(id), open=state.plPick===name;
         return `<div class="slot"><img src="${it?icon(it.ic,"small"):"data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="}" alt="" width="28" height="28"><div><div class="label">${esc(name)}</div>${it?`<a href="https://www.wowhead.com/forever/item=${it.id}" data-wowhead="item=${it.id}&domain=forever" target="_blank" rel="noopener" style="color:${PL_QCOLOR[it.q]||"#fff"};font-weight:700">${esc(it.n)}</a> <span class="muted">ilvl ${it.il}</span><div class="muted" style="font-size:13px">${esc(plStatLine(it))}${it.src?` · ${esc(it.src)}`:""}</div>${(alts=>alts.length>1?`<div class="muted alts" style="font-size:13px">${alts.map(a=>a.chosen?`<span>${a.rank===1?"best":a.rank===2?"2nd":"3rd"}: <b>${esc(a.it.n)}</b> (chosen)</span>`:`<span>${a.rank===1?"best":a.rank===2?"2nd":"3rd"}: <a href="https://www.wowhead.com/forever/item=${a.it.id}" data-wowhead="item=${a.it.id}&domain=forever" target="_blank" rel="noopener" style="color:${PL_QCOLOR[a.it.q]||"#fff"}">${esc(a.it.n)}</a> <span class="muted">${esc(plSrcShort(a.it))}</span> <button class="btn small" data-use="${a.it.id}" data-slot="${esc(name)}">Use</button></span>`).join(" · ")}</div>`:"")(plAlternates(name,key,p,spec))}${(list=>list.length?`<div class="muted" style="font-size:13px">Enchant: <select data-ench="${esc(name)}" aria-label="Enchant for ${esc(name)}"><option value="">none</option>${list.sort((a,b)=>plEnchScore(b,spec)-plEnchScore(a,spec)).map(e=>`<option value="${e.id}" ${state.pl.ench[name]===e.id?"selected":""}>${esc(e.n.replace(/^Enchant \w+( Weapon)? - /,""))} (${esc(plEnchLine(e))})</option>`).join("")}</select></div>`:"")(plEnchCandidates(name,it,p))}`:`<span class="muted">${name==="Off hand"&&(id2=>{const m=id2&&plItem(id2);return m&&m.h===4})(state.pl.gear["Main hand"])?"Two-handed weapon in use":"Empty"}</span>`}</div><div class="chips"><button class="btn small" data-pick="${esc(name)}">${open?"Close":"Change"}</button>${it?`<button class="btn small" data-clear="${esc(name)}">Clear</button>`:""}</div></div>
         ${open?plPickerHTML(name,key,p,spec):""}`}).join("")}</div>
   </div>`;
-  el.querySelectorAll("[data-spec]").forEach(b=>b.onclick=()=>{const k=b.dataset.spec; state.pl.spec=k; state.pl.t=plPreset(p.cls,k); plAutofill(); writeHash(); renderPlanner()});
+  el.querySelectorAll("[data-spec]").forEach(b=>b.onclick=()=>{const k=b.dataset.spec; state.pl.spec=k; state.pl.t=plPreset(p.cls,k); state.plTree=undefined; plAutofill(); writeHash(); renderPlanner()});
+  el.querySelectorAll("[data-fold]").forEach(b=>b.onclick=()=>{const k=b.dataset.fold; state.plFold[k]=!state.plFold[k]; renderPlanner(); if(!state.plFold[k]){const sec=$("#plSec-"+k); if(sec)sec.scrollIntoView({block:"nearest"})}});
+  el.querySelectorAll("[data-tree]").forEach(b=>b.onclick=()=>{state.plTree=+b.dataset.tree; renderPlanner()});
   el.querySelectorAll("[data-phase]").forEach(b=>b.onclick=()=>{state.pl.phase=b.dataset.phase; state.pl.t=plPreset(p.cls,state.pl.spec); state.plPick=null; plAutofill(); writeHash(); renderPlanner()});
   el.querySelectorAll("[data-ench]").forEach(s=>s.onchange=()=>{const n=s.dataset.ench; if(s.value)state.pl.ench[n]=+s.value; else delete state.pl.ench[n]; writeHash(); renderPlanner()});
   $("#plPreset").onclick=()=>{state.pl.t=plPreset(p.cls,spec);writeHash();renderPlanner()};
@@ -883,6 +898,18 @@ function dpsSpellEV(base,coef,S,school,castTime,extraMult=1,critBonus=0){
   const hit=dpsSpellHit(S,school), crit=dpsSpellCrit(S,school), cm=1.5+((S.spellCrit[school]||0)+critBonus)/100*0.5;
   return dmg*hit*(1+crit*(cm-1))/castTime;
 }
+/* Execute phase (16 Sep 2026): the last 20% of the boss's health is taken as 20% of the fight, WoWSims' default. In it every rage point
+   goes to Execute (Classic rank 7: 600 damage plus 15 per extra rage, 15 rage less Improved Execute), one per 1.5-second global
+   cooldown; Bloodthirst, Whirlwind and Heroic Strike stop, white swings and their rage continue. A missed or dodged Execute still
+   spends its rage (Classic). rage = rage per second before any ability spends it. */
+const DPS_EXEC_FRAC=0.2;
+function dpsExecute(R,rage,Ty,abilCrit,mult,notes){
+  const cost=Math.max(5,15-R.num("Improved Execute",0)), gcd=1/1.5;
+  const rate=Math.max(0,Math.min(gcd,rage/cost)), extra=Math.max(0,rage-rate*cost);
+  const dps=dpsEV(DPS_K*600,Ty,abilCrit,mult)*rate+dpsEV(DPS_K*15,Ty,abilCrit,mult)*extra;
+  notes.push(`Execute phase: the last 20% of the boss is taken as 20% of the fight (WoWSims' default). All rage goes to Execute then (Classic rank 7, 600 damage plus 15 per extra rage, ${cost} rage, at most one per 1.5 s): ${rate.toFixed(2)} a second with ${extra.toFixed(1)} spare rage a second; Bloodthirst, Whirlwind, Mortal Strike and Heroic Strike stop, and a missed or dodged Execute still spends its rage.`);
+  return {dps,rate};
+}
 /* ---- the models: each returns [[label, dps], ...] and pushes its assumptions into notes ---- */
 const DPS_MODELS={
   Fury(S,R,notes){
@@ -899,14 +926,15 @@ const DPS_MODELS={
     const white=(dpsEV(mhDmg,Tw,critMult,phys*buff)*mhSw+dpsEV(ohDmg,Tw,critMult,phys*buff)*ohSw);
     // rage: 7.5 rage per 230.6 damage dealt by weapon swings at 60 (Classic), Unbridled Wrath, Anger Management; Bloodthirst and Whirlwind first, Heroic Strike with the rest
     const landed=Tw.hit+Tw.crit*critMult+Tw.glance*0.65;
-    let rage=(mhDmg*landed*mhSw+ohDmg*landed*ohSw)*phys*7.5/230.6+R.num("Unbridled Wrath",0)/100*(mhSw+ohSw)*(mh.h===4?2:1)+(R.rank("Anger Management")?1/3:0);
+    let rage=(mhDmg*landed*mhSw+ohDmg*landed*ohSw)*phys*7.5/230.6+R.num("Unbridled Wrath",0)/100*(mhSw+ohSw)*(mh.h===4?2:1)+(R.rank("Anger Management")?1/3:0); const rageAll=rage;
     const parts=[];
     if(R.rank("Bloodthirst")){const pct=R.num("Bloodthirst",0)/100, flat=R.num("Bloodthirst",1); const bt=dpsEV(S.ap*pct+flat,Ty,abilCrit,phys*buff)/6; parts.push(["Bloodthirst",bt]); rage-=30/6}
     const ww=dpsEV(dpsWpn(mh,S.ap,DPS_NORM[mh.w]||2.4),Ty,abilCrit,phys*buff)/10+(R.rank("Raging Blows")&&dw?dpsEV(dpsWpn(oh,S.ap,DPS_NORM[oh.w]||2.4)*0.5*(1+dwSpec),Ty,abilCrit,phys*buff)/10:0);
     parts.push(["Whirlwind",ww]); rage-=25/10;
     const hsCost=15-R.num("Improved Heroic Strike",0)-R.num("Focused Rage",0); const hsRate=Math.max(0,Math.min(mhSw,rage/hsCost));
     const hsGain=(dpsEV(mhDmg+DPS_K*138,Ty,abilCrit,phys*buff)-dpsEV(mhDmg,Tw,critMult,phys*buff))*hsRate; parts.push(["Heroic Strike (rage dump)",Math.max(0,hsGain)]);
-    if(R.rank("Deep Wounds")){const rate=(Tw.crit*(mhSw+ohSw)+Ty.crit*(1/6+1/10+hsRate)); const dwDps=R.num("Deep Wounds",0)/100*((mh.min+mh.max)/2)/12*Math.min(1,rate*12)*phys*buff; parts.push(["Deep Wounds",dwDps])}
+    const ex=dpsExecute(R,rageAll,Ty,abilCrit,phys*buff,notes); parts.forEach(pt=>{pt[1]*=1-DPS_EXEC_FRAC}); parts.push(["Execute (last 20% of the boss)",ex.dps*DPS_EXEC_FRAC]);
+    if(R.rank("Deep Wounds")){const rate=(Tw.crit*(mhSw+ohSw)+Ty.crit*((1/6+1/10+hsRate)*(1-DPS_EXEC_FRAC)+ex.rate*DPS_EXEC_FRAC)); const dwDps=R.num("Deep Wounds",0)/100*((mh.min+mh.max)/2)/12*Math.min(1,rate*12)*phys*buff; parts.push(["Deep Wounds",dwDps])}
     parts.unshift(["White swings",white]);
     if(R.rank("Weaponmaster")||R.rank("Hack and Slash"))notes.push("Weaponmaster: only the axe crit bonus is counted (in the crit line); the sword extra-attack and mace armor bonuses are not.");
     notes.push(`Rage model: ${rage.toFixed(1)} rage per second left for Heroic Strike after Bloodthirst and Whirlwind, at ${hsCost} rage each.`);
@@ -920,13 +948,14 @@ const DPS_MODELS={
     const flurry=R.num("Flurry",0)/100, flurryUp=flurry?1-Math.pow(1-Tw.crit,3):0, haste=(1+S.haste/100)*(1+flurry*flurryUp);
     const sw=haste/mh.speed, mhDmg=dpsWpn(mh,S.ap);
     const parts=[["White swings",dpsEV(mhDmg,Tw,critMult,phys*buff)*sw]];
-    let rage=mhDmg*(Tw.hit+Tw.crit*2+Tw.glance*0.65)*sw*phys*7.5/230.6+R.num("Unbridled Wrath",0)/100*sw*(mh.h===4?2:1)+(R.rank("Anger Management")?1/3:0);
+    let rage=mhDmg*(Tw.hit+Tw.crit*2+Tw.glance*0.65)*sw*phys*7.5/230.6+R.num("Unbridled Wrath",0)/100*sw*(mh.h===4?2:1)+(R.rank("Anger Management")?1/3:0); const rageAll=rage;
     if(R.rank("Mortal Strike")){parts.push(["Mortal Strike",dpsEV(dpsWpn(mh,S.ap,DPS_NORM[mh.w]||3.3)+R.num("Mortal Strike",0),Ty,abilCrit,phys*buff)/6]); rage-=30/6}
     parts.push(["Whirlwind",dpsEV(dpsWpn(mh,S.ap,DPS_NORM[mh.w]||3.3),Ty,abilCrit,phys*buff)/10]); rage-=25/10;
     if(R.rank("Bloodthrill")||true){const opRate=Math.min(1/5,Ty.dodge*sw); if(opRate>0){const opT={...Ty,miss:0,dodge:0}; opT.crit=Math.min(1,Ty.crit+R.num("Improved Overpower",0)/100); opT.hit=Math.max(0,1-opT.crit); parts.push(["Overpower after dodges",dpsEV(dpsWpn(mh,S.ap,DPS_NORM[mh.w]||3.3)+35,opT,abilCrit,phys*buff)*opRate]); rage-=5*opRate}}
     const hsCost=15-R.num("Improved Heroic Strike",0)-R.num("Focused Rage",0), hsRate=Math.max(0,Math.min(sw,rage/hsCost));
     parts.push(["Heroic Strike (rage dump)",Math.max(0,(dpsEV(mhDmg+DPS_K*138,Ty,abilCrit,phys*buff)-dpsEV(mhDmg,Tw,critMult,phys*buff))*hsRate)]);
-    if(R.rank("Deep Wounds")){const rate=Tw.crit*sw+Ty.crit*(1/6+1/10+hsRate); parts.push(["Deep Wounds",R.num("Deep Wounds",0)/100*((mh.min+mh.max)/2)/12*Math.min(1,rate*12)*phys*buff])}
+    const ex=dpsExecute(R,rageAll,Ty,abilCrit,phys*buff,notes); parts.forEach((pt,i)=>{if(i)pt[1]*=1-DPS_EXEC_FRAC}); parts.push(["Execute (last 20% of the boss)",ex.dps*DPS_EXEC_FRAC]);
+    if(R.rank("Deep Wounds")){const rate=Tw.crit*sw+Ty.crit*((1/6+1/10+hsRate)*(1-DPS_EXEC_FRAC)+ex.rate*DPS_EXEC_FRAC); parts.push(["Deep Wounds",R.num("Deep Wounds",0)/100*((mh.min+mh.max)/2)/12*Math.min(1,rate*12)*phys*buff])}
     notes.push(`Rage model: ${rage.toFixed(1)} rage per second left for Heroic Strike after Mortal Strike and Whirlwind.`);
     if(R.rank("Weaponmaster"))notes.push("Weaponmaster: only the axe crit bonus is counted; the sword extra attack and mace armor bonus are not.");
     return parts;
@@ -1040,8 +1069,8 @@ const DPS_MODELS={
   },
   Fire(S,R,notes){
     const cast=Math.max(1.5,3.5-R.num("Improved Fireball",0)); const scorch=R.rank("Improved Scorch")?1+R.num("Improved Scorch",1)*R.num("Improved Scorch",3)/100:1; // "3% ... stacking up to 5 times"
-    const ignite=R.rank("Ignite")?R.num("Ignite",0)/100:0; const critBonus=ignite*100; // Ignite: 40% of the crit's damage over 4 s, counted as crit bonus
-    notes.push(`Fireball rank 12 (596 to 760, ${cast}s cast, full spell damage); its 8-second burn and Fire Blast are not counted.${scorch>1?" Improved Scorch kept at 5 stacks.":""}`);
+    const ignite=R.rank("Ignite")?R.num("Ignite",0)/100:0; const critBonus=ignite*300; // Ignite: 40% of the crit's full damage (1.5x) over 4 s = 0.6x base; critBonus counts in halves of base, so 40% -> 120 (was 100, undercounting it; 16 Sep WoWSims check)
+    notes.push(`Fireball rank 12 (596 to 760, ${cast}s cast, full spell damage); its 8-second burn and Fire Blast are not counted.${scorch>1?" Improved Scorch kept at 5 stacks.":""} Mana is assumed to last: in starter gear it does not for a two-minute fight without potions or runes (WoWSims, 16 Sep), so a long fight lands well under this number.`);
     return [["Fireball",dpsSpellEV(DPS_K*678,1,S,"Fire",cast,scorch,critBonus)]];
   },
   Frost(S,R,notes){
