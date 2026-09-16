@@ -495,6 +495,8 @@ function detailHTML(p,I){
   </div>`;
 }
 const selectedPath=()=>state.pl&&state.pl.path;
+const LIST_TOP=10;
+const listed=I=>rankAll(DATA.paths,I).filter(s=>I.role==="Any"||new RegExp(I.role).test(s.p.roles));
 function rowHTML(s,i,I,extra){
   const p=s.p,open=state.open===p.name,isSel=selectedPath()===p.name;
   return `
@@ -506,25 +508,20 @@ function rowHTML(s,i,I,extra){
     </div>${open?detailHTML(p,I):""}`;
 }
 function renderFind(){
-  const I=state.I, ranked=rankAll(DATA.paths,I);
-  // One row per class, its best race leading and the other races folded under it (16 Sep 2026: the old best-10 read as
-  // Druid four times and Shaman five times at the same score, because race fit is a ten percent tiebreaker).
-  const groups=[]; for(const s of ranked){const g=groups.find(g=>g.cls===s.p.cls); if(g)g.others.push(s); else groups.push({cls:s.p.cls,best:s,others:[]})}
-  const sel=selectedPath(), foldable=groups.some(g=>g.others.length);
-  const expanded=g=>state.all||groups.length===1||!!state.expand[g.cls]||(sel&&g.others.some(o=>o.p.name===sel));
-  $("#resTitle").textContent=groups.length?(groups.length===1?`${groups[0].cls}, every race`:"Best fit per class"):"Best fits";
+  const I=state.I, ranked=listed(I);
+  // One row per race and class, best 10 first (owner, 16 Sep 2026 evening: the per-class fold hid races and kept casters on a melee list).
+  // A class that cannot fill the chosen role is left off rather than ranked low.
+  const sel=selectedPath(), selAt=ranked.findIndex(s=>s.p.name===sel);
+  const n=state.all?ranked.length:Math.max(LIST_TOP,selAt+1), shown=ranked.slice(0,n);
+  $("#resTitle").textContent=ranked.length?(I.cls!=="Any"?`${I.cls}, every race`:"Best fits"):"Best fits";
   $("#resSub").textContent=ranked.length?`${I.faction==="Any"?"Both factions":I.faction} · ${I.role==="Any"?"any role":I.role} · ${I.goal==="Balanced"?"balanced PvP and PvE":I.goal}`:"";
-  $("#toggleAll").hidden=!foldable||groups.length===1; $("#toggleAll").textContent=state.all?"Best race only":"Show every race";
-  const act=document.activeElement, focusKey=act&&$("#list").contains(act)?(act.dataset.why?["data-why",act.dataset.why]:act.dataset.races?["data-races",act.dataset.races]:act.dataset.name?["data-name",act.dataset.name]:null):null;
-  if(!ranked.length){$("#list").innerHTML=`<div class="empty tip">No path matches those filters. Set class or race back to <b>Any</b>, or pick a race your faction can play.</div>`;return}
-  const shown=[];
-  $("#list").innerHTML=groups.map((g,i)=>{const ex=expanded(g);shown.push(g.best);if(ex)shown.push(...g.others);
-    const toggle=g.others.length&&groups.length>1?`<button class="races" data-races="${esc(g.cls)}" aria-expanded="${ex}">${ex?"hide races":`+${g.others.length} race${g.others.length>1?"s":""}`}</button>`:"";
-    return rowHTML(g.best,i,I,toggle)+(ex?g.others.map(o=>rowHTML(o,null,I,"")).join(""):"")}).join("")+
+  $("#toggleAll").hidden=ranked.length<=LIST_TOP; $("#toggleAll").textContent=state.all?`Best ${LIST_TOP} only`:`Show all ${ranked.length}`;
+  const act=document.activeElement, focusKey=act&&$("#list").contains(act)?(act.dataset.why?["data-why",act.dataset.why]:act.dataset.name?["data-name",act.dataset.name]:null):null;
+  if(!ranked.length){$("#list").innerHTML=`<div class="empty tip">No path matches those filters.${I.role!=="Any"&&rankAll(DATA.paths,I).length?` That class or race cannot play ${esc(I.role)}; pick another role or set class back to <b>Any</b>.`:` Set class or race back to <b>Any</b>, or pick a race your faction can play.`}</div>`;return}
+  $("#list").innerHTML=shown.map((s,i)=>rowHTML(s,i,I,"")).join("")+
     (l=>l.length?`<div class="list-legend">${l.join(" ")}</div>`:"")([shown.some(x=>isSky(x.p))?"Pack race: Skyborne needs the Heroic Pack ($29.99) or higher.":"",shown.some(x=>isNew(x.p))?"New combo: a race and class pairing that is new in Forever.":""].filter(Boolean));
   // Selecting a row plans it on the right. On a phone the planner sits below the list, so the page moves to it (16 Sep 2026: a tap used to change nothing in view).
   $("#list").querySelectorAll(".row").forEach(r=>{const go=()=>{plOpen(r.dataset.name,null,true);if(matchMedia("(max-width:900px)").matches)$("#planner").scrollIntoView({block:"start",behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth"})};r.onclick=go;r.onkeydown=e=>{if(e.target!==r)return;if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}}}); // Enter on the why? or races button is that button's, not the row's (16 Sep 2026)
-  $("#list").querySelectorAll("[data-races]").forEach(b=>b.onclick=e=>{e.stopPropagation();state.expand[b.dataset.races]=!state.expand[b.dataset.races];renderFind()});
   $("#list").querySelectorAll("[data-why]").forEach(b=>b.onclick=e=>{e.stopPropagation();state.open=state.open===b.dataset.why?null:b.dataset.why;renderFind()});
   $("#list").querySelectorAll("[data-plan]").forEach(b=>b.onclick=e=>{e.stopPropagation();addToPlan(b.dataset.plan);renderFind()});
   if(focusKey){const f=$("#list").querySelector(`[${focusKey[0]}="${CSS.escape(focusKey[1])}"]`); if(f)f.focus({preventScroll:true})} // keyboard focus survives the re-render (16 Sep 2026)
@@ -533,7 +530,7 @@ $("#toggleAll").onclick=()=>{state.all=!state.all;renderFind()};
 /* The planner follows the choices. A path the user selected stays while it is still listed and can fill the chosen role;
    otherwise the best fit is planned. */
 function syncPlanner(){
-  const ranked=rankAll(DATA.paths,state.I); if(!ranked.length)return;
+  const ranked=listed(state.I); if(!ranked.length)return;
   const pin=state.pinned&&ranked.find(s=>s.p.name===state.pinned);
   const keep=pin&&(state.I.role==="Any"||state.I.role==="Hybrid"||specFor(pin.p,state.I));
   if(!keep)state.pinned=null;
