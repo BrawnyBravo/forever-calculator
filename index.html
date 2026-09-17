@@ -780,13 +780,15 @@ function plOpen(pathName,specName,userPick){
     if(!state.pl||state.pl.path!==pathName||state.pl.spec!==spec){
       // the goal is stamped before the preset is chosen, not after: plPreset reads it to decide between the damage build and the
       // Pure PvP one, and a build opened with no goal on it would always come back as the damage build (17 Sep 2026)
-      const phase=state.pl&&state.pl.phase||"l60"; state.pl={path:pathName,spec,phase,goal:state.I.goal,t:null,gear:{},ench:{},lock:{},enchLock:{},raid:false,pvp:false,buffs:true,cons:false,deb:true,prof:["",""],beast:false}; state.pl.t=plPreset(p.cls,spec);
-      plAutofill(); state.plPick=null; state.plTree=undefined;
+      const phase=state.pl&&state.pl.phase||"l60"; state.pl={path:pathName,spec,phase,goal:state.I.goal,profPri:state.I.profPri,t:null,gear:{},ench:{},lock:{},enchLock:{},raid:false,pvp:false,buffs:true,cons:false,deb:true,prof:["",""],beast:false}; state.pl.t=plPreset(p.cls,spec);
+      plAutoProf(); plAutofill(); state.plPick=null; state.plTree=undefined;
     } else if(state.pl.goal===undefined) state.pl.goal=state.I.goal; // a build from a link keeps its gear
     else if(state.pl.goal!==state.I.goal){ const was=plSurvivalWeight(), wasPreset=plTalentString(state.pl.t)===plTalentString(plPreset(p.cls,state.pl.spec)); state.pl.goal=state.I.goal;
       // PvP and PvE differ in gear and, for Pure PvP, in talents: suggest both again. A build the visitor has edited by hand is left alone.
       if(wasPreset){const np=plPreset(p.cls,state.pl.spec); if(plTalentString(np)!==plTalentString(state.pl.t))state.pl.t=np}
+      plAutoProf();
       if(plSurvivalWeight()!==was||wasPreset){plAutofill(); state.plPick=null} }
+    if(state.pl.profPri!==state.I.profPri){state.pl.profPri=state.I.profPri; plAutoProf(); plAutofill()} // the profession priority on the first tab is the tie-break, so a new one is a new suggestion
     if(!state.lgOff&&!Object.values(state.legacy).some(n=>n>0))plLegacyMeta(state.I.goal);
     writeHash(); renderPlanner(); if(typeof renderFind==="function")renderFind();
     if(userPick&&window.matchMedia("(max-width:900px)").matches)$("#planner").scrollIntoView({block:"start",behavior:"smooth"});
@@ -1049,6 +1051,31 @@ function plEffects(p,sp){
    because a made-up number would be worse than an honest gap. */
 const plProfList=()=>(PL&&PL.profPerks)||[];
 const plProfChosen=()=>((state.pl&&state.pl.prof)||[]).filter(Boolean);
+/* What one profession is worth to this build, measured by the same value the gear is chosen by: damage for PvE, damage and
+   staying alive together for Pure PvP, and effective health alone for a tank or anyone with no damage model. */
+function plProfScore(name){
+  const p=DATA.paths.find(x=>x.name===state.pl.path); if(!p)return 0;
+  const keep=state.pl.prof;
+  const val=()=>{const o=plObjective(p,state.pl.spec); return o!=null?o:plEhp(plStats(p).S)};
+  try{state.pl.prof=["",""]; const base=val(); state.pl.prof=[name,""]; return val()-base}
+  finally{state.pl.prof=keep}
+}
+/* The suggested pair. Scored first, so a profession that really adds damage or survival wins on its own merit. Most perks have no
+   published numbers and therefore score dead level, so the tie is broken by the profession priority chosen on the first tab, using
+   this page's existing per-class guidance (profFor) - which is the honest answer today: when nothing separates them on paper, take
+   the pair that suits how you want to play. (17 Sep 2026, the owner: "it should put the meta professions based on what it adds to
+   the character for damage or pvp useability etc".) */
+function plSuggestProf(){
+  const list=plProfList().map(x=>x.n); if(!list.length)return ["",""];
+  const p=DATA.paths.find(x=>x.name===state.pl.path);
+  let pref=[];
+  try{pref=((typeof profFor==="function"&&p?profFor(p,state.I):"")||"").split(/\s*\+\s*/).map(x=>x.trim())}catch(e){}
+  const scored=list.map((n,i)=>({n,s:plProfScore(n),pref:pref.indexOf(n)>=0?1:0,i}));
+  scored.sort((a,b)=>(b.s-a.s)||(b.pref-a.pref)||(a.i-b.i));
+  return [scored[0].n,scored[1].n];
+}
+/* Suggest again unless the visitor has picked for themselves, the same bargain the gear makes. */
+function plAutoProf(){ if(state.pl&&!state.pl.profLock)state.pl.prof=plSuggestProf() }
 function plProfFx(){
   const out=[];
   for(const name of plProfChosen()){const pr=plProfList().find(x=>x.n===name); if(pr)for(const e of pr.fx||[])out.push({...e,src:name});}
@@ -1164,10 +1191,10 @@ function renderPlanner(){
         return `<div class="slot"><img src="${it?icon(it.ic,"small"):"data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="}" alt="" width="28" height="28"><div><div class="label">${esc(name)}</div>${it?`<a href="https://www.wowhead.com/${plWhDom(it)}/item=${it.id}" data-wowhead="item=${it.id}&domain=${plWhDom(it)}" target="_blank" rel="noopener" style="color:${PL_QCOLOR[it.q]||"#fff"};font-weight:700">${esc(it.n)}</a> <span class="muted">ilvl ${it.il}</span><div class="muted" style="font-size:13px">${esc(plStatSrcLine(it))}</div>${(alts=>alts.length>1?`<div class="alts" aria-label="Best, 2nd and 3rd choice for ${esc(name)}"><span class="label">Choices</span>${alts.map(a=>{const rk=a.rank===1?"Best":a.rank===2?"2nd":"3rd"; return `<a class="alt${a.chosen?" chosen":""}" href="https://www.wowhead.com/${plWhDom(a.it)}/item=${a.it.id}" data-wowhead="item=${a.it.id}&domain=${plWhDom(a.it)}" target="_blank" rel="noopener" style="border-color:${a.chosen?"var(--gold)":PL_QCOLOR[a.it.q]||"#777"}" ${a.chosen?"":`data-use="${a.it.id}" data-slot="${esc(name)}"`} aria-label="${rk}: ${esc(a.it.n)}, ${esc(plSrcShort(a.it))}${a.chosen?", chosen":", click to use it"}"><img src="${icon(a.it.ic,"small")}" alt="" width="30" height="30"><b class="altrank">${a.rank}</b></a>`}).join("")}</div>`:"")(plAlternates(name,key,p,spec))}${(list=>list.length?`<div class="muted" style="font-size:13px">Enchant: <select data-ench="${esc(name)}" aria-label="Enchant for ${esc(name)}"><option value="">none</option>${list.sort((a,b)=>plEnchScore(b,spec,name)-plEnchScore(a,spec,name)).map(e=>`<option value="${e.id}" ${state.pl.ench[name]===e.id?"selected":""}>${esc(e.n.replace(/^Enchant \w+( Weapon)? - /,""))} (${esc(plEnchLine(e))})</option>`).join("")}</select></div>`:"")(plEnchCandidates(name,it,p))}`:`<span class="muted">${name==="Off hand"&&(id2=>{const m=id2&&plItem(id2);return m&&m.h===4})(state.pl.gear["Main hand"])?"Two-handed weapon in use":"Empty"}</span>`}</div><div class="chips"><button class="btn small" data-pick="${esc(name)}">${open?"Close":"Change"}</button>${it?`<button class="btn small" data-clear="${esc(name)}">Clear</button>`:""}</div></div>
         ${open?plPickerHTML(name,key,p,spec):""}`}).join("")}</div>
   </div>`;
-  el.querySelectorAll("[data-spec]").forEach(b=>b.onclick=()=>{const k=b.dataset.spec; state.pl.spec=k; state.pl.t=plPreset(p.cls,k); state.plTree=undefined; state.pl.lock={}; state.pl.enchLock={}; plAutofill(); /* a new spec or phase is a new item pool: hand picks start over (17 Sep 2026) */ writeHash(); renderPlanner()});
+  el.querySelectorAll("[data-spec]").forEach(b=>b.onclick=()=>{const k=b.dataset.spec; state.pl.spec=k; state.pl.t=plPreset(p.cls,k); state.plTree=undefined; state.pl.lock={}; state.pl.enchLock={}; plAutoProf(); plAutofill(); /* a new spec or phase is a new item pool: hand picks start over (17 Sep 2026) */ writeHash(); renderPlanner()});
   el.querySelectorAll("[data-fold]").forEach(b=>b.onclick=()=>{const k=b.dataset.fold; state.plFold[k]=!state.plFold[k]; renderPlanner(); if(!state.plFold[k]){const sec=$("#plSec-"+k); if(sec)sec.scrollIntoView({block:"nearest"})}});
   el.querySelectorAll("[data-tree]").forEach(b=>b.onclick=()=>{state.plTree=+b.dataset.tree; renderPlanner()});
-  el.querySelectorAll("[data-phase]").forEach(b=>b.onclick=()=>{const keep=PL.phases[b.dataset.phase].pts===plMaxPts(); state.pl.phase=b.dataset.phase; if(!keep)state.pl.t=plPreset(p.cls,state.pl.spec); state.plPick=null; state.pl.lock={}; state.pl.enchLock={}; plAutofill(); writeHash(); renderPlanner()}); // same point cap (Launch and Phase 1): the placed talents stay; gear is suggested again for the new pool
+  el.querySelectorAll("[data-phase]").forEach(b=>b.onclick=()=>{const keep=PL.phases[b.dataset.phase].pts===plMaxPts(); state.pl.phase=b.dataset.phase; if(!keep)state.pl.t=plPreset(p.cls,state.pl.spec); state.plPick=null; state.pl.lock={}; state.pl.enchLock={}; plAutoProf(); plAutofill(); writeHash(); renderPlanner()}); // same point cap (Launch and Phase 1): the placed talents stay; gear is suggested again for the new pool
   el.querySelectorAll("[data-ench]").forEach(s=>s.onchange=()=>{const n=s.dataset.ench; if(s.value)state.pl.ench[n]=+s.value; else delete state.pl.ench[n]; (state.pl.enchLock=state.pl.enchLock||{})[n]=+s.value||0; writeHash(); renderPlanner(); plAutoGear()});
   $("#plPreset").onclick=()=>{state.pl.t=plPreset(p.cls,spec);writeHash();renderPlanner();plAutoGear()};
   $("#plClearT").onclick=()=>{state.pl.t=state.pl.t.map(tl=>tl.map(()=>0));writeHash();renderPlanner();plAutoGear()};
@@ -1175,9 +1202,10 @@ function renderPlanner(){
   const rb=$("#plRaid"); if(rb)rb.onchange=e=>{state.pl.raid=e.target.checked;plAutofill();writeHash();renderPlanner()}; // the pool changed, so the suggestion is made again (16 Sep 2026: ticking it used to change nothing until Suggest was pressed)
   const pb=$("#plPvp"); if(pb)pb.onchange=e=>{state.pl.pvp=e.target.checked;plAutofill();writeHash();renderPlanner()};
   $("#plLink").onclick=()=>copyText(location.href,"Link copied");
-  ["buffs","cons","deb","beast"].forEach(k=>{const c=$("#plOpt-"+k); if(c)c.onchange=e=>{state.pl[k]=e.target.checked;writeHash();renderPlanner();plAutoGear()}});
-  const pc=$("#plProfClear"); if(pc)pc.onclick=()=>{state.pl.prof=["",""];writeHash();renderPlanner();plAutoGear()};
-  el.querySelectorAll("[data-prof]").forEach(sel=>sel.onchange=()=>{const i=+sel.dataset.prof; state.pl.prof=(state.pl.prof||["",""]).slice(); state.pl.prof[i]=sel.value; if(sel.value&&state.pl.prof[1-i]===sel.value)state.pl.prof[1-i]=""; /* two slots, never the same profession twice */ writeHash(); renderPlanner(); plAutoGear()});
+  ["buffs","cons","deb","beast"].forEach(k=>{const c=$("#plOpt-"+k); if(c)c.onchange=e=>{state.pl[k]=e.target.checked;if(k==="beast"||k==="cons")plAutoProf();writeHash();renderPlanner();plAutoGear()}});
+  const pa=$("#plProfAuto"); if(pa)pa.onclick=()=>{state.pl.profLock=false;plAutoProf();writeHash();renderPlanner();plAutoGear()};
+  const pc=$("#plProfClear"); if(pc)pc.onclick=()=>{state.pl.profLock=true;state.pl.prof=["",""];writeHash();renderPlanner();plAutoGear()};
+  el.querySelectorAll("[data-prof]").forEach(sel=>sel.onchange=()=>{const i=+sel.dataset.prof; state.pl.profLock=true; state.pl.prof=(state.pl.prof||["",""]).slice(); state.pl.prof[i]=sel.value; if(sel.value&&state.pl.prof[1-i]===sel.value)state.pl.prof[1-i]=""; /* two slots, never the same profession twice */ writeHash(); renderPlanner(); plAutoGear()});
   el.querySelectorAll("[data-lg]").forEach(b=>b.onclick=()=>{const i=+b.dataset.lg;state.legacy[i]=Math.max(0,(state.legacy[i]||0)+ +b.dataset.d);writeHash();renderPlanner();plAutoGear()});
   const lr=$("#plLegacyReset"); if(lr)lr.onclick=()=>{state.legacy={};state.lgOff=true;state.lgGoal=null;writeHash();renderPlanner();plAutoGear()}; // stays cleared (16 Sep 2026: the next click used to refill it)
   const lm=$("#plLegacyMeta"); if(lm)lm.onclick=()=>{plLegacyMeta(state.I.goal);writeHash();renderPlanner();plAutoGear()};
@@ -1267,8 +1295,8 @@ function plProfHTML(){
   const lines=picked.map(n=>{const pr=list.find(x=>x.n===n); return pr?`<li><b>${esc(pr.n)}</b> - ${esc(pr.b)}: ${esc(pr.t)} <span class="muted">(${esc(pr.note)})</span></li>`:""}).join("");
   return `<div class="pl-prof" style="margin:8px 0 0">
     <div class="label">Professions <span class="muted" style="font-weight:400;text-transform:none">- two primary, as in the game</span></div>
-    <div class="chips" style="margin:4px 0">${sel(0)}${sel(1)}${picked.length?`<button class="btn small" id="plProfClear">Clear</button>`:""}<label class="muted" style="font-size:13px" title="Onyxia and most of Blackwing Lair are Dragonkin. Only Skinning's perk depends on this."><input type="checkbox" id="plOpt-beast" ${state.pl.beast?"checked":""}> boss is a Beast or Dragonkin</label>${(d=>d===null?"":`<span class="muted" style="font-size:13px">${d>0.05?`worth <b class="num" style="color:var(--gold)">${d.toFixed(1)}</b> per second here`:d<-0.05?`costs <b class="num">${(-d).toFixed(1)}</b> per second here`:"worth nothing to this estimate yet"}</span>`)(plProfDelta())}</div>
-    ${lines?`<ul class="muted" style="font-size:13px;padding-left:18px;margin:4px 0">${lines}${picked.includes("Alchemy")&&!state.pl.cons?`<li>Alchemy is worth nothing until <b>consumables</b> is ticked, under Damage.</li>`:""}</ul>`:`<p class="muted" style="font-size:13px;margin:4px 0">Pick two to see what they change. Most change nothing yet.</p>`}
+    <div class="chips" style="margin:4px 0">${sel(0)}${sel(1)}${picked.length?`<button class="btn small" id="plProfClear">Clear</button>`:""}${state.pl.profLock?`<button class="btn small" id="plProfAuto">Back to suggested</button>`:""}<label class="muted" style="font-size:13px" title="Onyxia and most of Blackwing Lair are Dragonkin. Only Skinning's perk depends on this."><input type="checkbox" id="plOpt-beast" ${state.pl.beast?"checked":""}> boss is a Beast or Dragonkin</label>${(d=>d===null?"":`<span class="muted" style="font-size:13px">${d>0.05?`worth <b class="num" style="color:var(--gold)">${d.toFixed(1)}</b> per second here`:d<-0.05?`costs <b class="num">${(-d).toFixed(1)}</b> per second here`:"worth nothing to this estimate yet"}</span>`)(plProfDelta())}</div>
+    ${state.pl.profLock?"":`<p class="muted" style="font-size:13px;margin:4px 0">Suggested for your goal and profession priority. Change either to pick your own.</p>`}${lines?`<ul class="muted" style="font-size:13px;padding-left:18px;margin:4px 0">${lines}${picked.includes("Alchemy")&&!state.pl.cons?`<li>Alchemy is worth nothing until <b>consumables</b> is ticked, under Damage.</li>`:""}</ul>`:`<p class="muted" style="font-size:13px;margin:4px 0">No professions. Pick two, or press Back to suggested.</p>`}
     <p class="muted" style="font-size:13px;margin:4px 0">Only Mining, Skinning and Alchemy have numbers published anywhere, and all of them trace back to BlizzCon attendee notes rather than a Blizzard post - the sites even disagree on whether Mining gives health or Stamina. The rest are listed with what they do and change nothing here until a beta tooltip says what they are worth.</p>
   </div>`;
 }
@@ -1333,7 +1361,7 @@ function plRestore(){
   if(!PL.phases[state.pl.phase])state.pl.phase="l60";
   const o=state.pl.opt||""; state.pl.buffs=!/b0/.test(o); state.pl.cons=/c1/.test(o); state.pl.deb=!/d0/.test(o); state.pl.beast=/k1/.test(o);
   const known=new Set(plProfList().map(x=>x.n)); // only real profession names off a link, and never the same one twice
-  const pr=(state.pl.profStr||"").split("~").map(x=>known.has(x)?x:"" ); state.pl.prof=[pr[0]||"",pr[1]&&pr[1]!==pr[0]?pr[1]:""]; delete state.pl.profStr;
+  const pr=(state.pl.profStr||"").split("~").map(x=>known.has(x)?x:"" ); state.pl.prof=[pr[0]||"",pr[1]&&pr[1]!==pr[0]?pr[1]:""]; if(state.pl.prof[0]||state.pl.prof[1])state.pl.profLock=true; delete state.pl.profStr;
   delete state.pl.tStr; delete state.pl.gearStr; delete state.pl.opt;
 }
 
