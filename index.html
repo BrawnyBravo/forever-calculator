@@ -802,7 +802,7 @@ function plCandidates(slotKey,p,spec){
    an item adds inside the room left by the rest of the build (16 Sep 2026 deep dive: the Feral starter set sat at 16% hit). */
 const plHitCap=sp=>plIsCaster(sp)?16:9;
 function plHitOther(gear,ench,exceptSlot,p,sp){
-  let h=0; for(const [n,id] of Object.entries(gear)){if(n===exceptSlot)continue; const it=plItem(id); if(it&&it.s[18])h+=it.s[18]; const e=ench&&ench[n]&&plEnch(ench[n]); if(e&&e.s[18])h+=e.s[18]}
+  let h=0; for(const [n,id] of Object.entries(gear)){if(n===exceptSlot)continue; const it=plItem(id); if(it&&it.s[18])h+=it.s[18]; const e=ench&&ench[n]&&plEnch(ench[n],n,it); if(e&&e.s[18])h+=e.s[18]}
   return h+plEffects(p,sp).filter(e=>e.k==="hit").reduce((a,e)=>a+e.v,0);
 }
 const plHitRoom=(slotName,p,spec)=>plHitCap(PL.specs[spec])-plHitOther(state.pl.gear,state.pl.ench,slotName,p,PL.specs[spec]);
@@ -904,14 +904,23 @@ function plOneWeaponSet(){
   if(mh&&mh.h===4&&oh){if(state.plPick==="Off hand"){delete state.pl.gear["Main hand"];delete state.pl.ench["Main hand"]}else{delete state.pl.gear["Off hand"];delete state.pl.ench["Off hand"]}}
 }
 /* --- enchants (PL.enchants): which fit a slot's item, best by the spec's stat weights --- */
-const plEnch=id=>PL.enchants.find(e=>e.id===id);
+// Does enchant e go on this slot's item (shape only: no class or phase filter)
+function plEnchFits(e,slotName,it){
+  if(!it)return false; const key=PL_SLOTS.find(s=>s[0]===slotName)[1];
+  if(key==="mh"||key==="oh"){ if(it.w===7)return e.t===13&&e.et===2; if(it.w===5)return false; if(e.t!==13||e.et===2)return false; if(e.et===1)return it.h===4; if(e.et===4)return it.w===8; return true }
+  if(key==="rng")return e.t===14&&[1,2,3].includes(it.r);
+  return e.t===it.t||(e.x&&e.x.includes(it.t));
+}
+// WoWSims gives same-valued enchants for different slots one effect id (16 pairs, e.g. 2564 is both the gloves' and the weapon's +15 Agility),
+// so a bare id lookup named a weapon enchant "Enchant Gloves - Superior Agility". With the slot it picks the one that fits there; ids and links
+// stay as they were (17 Sep 2026).
+const plEnch=(id,slotName,it)=>{const all=PL.enchants.filter(e=>e.id===id); if(all.length<2||!slotName)return all[0];
+  if(it===undefined)it=plItem(state.pl.gear[slotName]); return all.find(e=>plEnchFits(e,slotName,it))||all[0]};
 function plEnchCandidates(slotName,it,p){
-  if(!it)return []; const key=PL_SLOTS.find(s=>s[0]===slotName)[1];
+  if(!it)return [];
   const ph=plPhase(); // 16 Sep 2026: only what someone can have at the phase's level (maker's skill, item's level)
   return PL.enchants.filter(e=>{ if(e.c&&!e.c.includes(PL_CLASS_ID[p.cls]))return false; if((e.sk||0)>ph.skill||(e.lv||0)>ph.level)return false;
-    if(key==="mh"||key==="oh"){ if(it.w===7)return e.t===13&&e.et===2; if(it.w===5)return false; if(e.t!==13||e.et===2)return false; if(e.et===1)return it.h===4; if(e.et===4)return it.w===8; return true }
-    if(key==="rng")return e.t===14&&[1,2,3].includes(it.r);
-    return e.t===it.t||(e.x&&e.x.includes(it.t)) });
+    return plEnchFits(e,slotName,it) });
 }
 function plEnchScore(e,spec,slotName){const sp=PL.specs[spec]; let s=0; for(const k in e.s)s+=e.s[k]*(sp.w[k]||0);
   if(e.wd&&slotName&&!plIsCaster(sp)){const it=plItem(state.pl.gear[slotName]), key=PL_SLOTS.find(x=>x[0]===slotName)[1], dw={mh:sp.mh||1,oh:sp.oh||0,rng:sp.rng||0}[key]||0; if(it&&it.d)s+=e.wd/it.d[2]*dw} // flat weapon damage as weapon dps, weighed like plScore
@@ -978,7 +987,7 @@ function plEffects(p,sp){
 function plStats(p){
   const b=PL.base.cls[p.cls], r=state.pl.noRacial?plRaceBaseAvg(p):(PL.base.race[p.race]||{}), g=Array(44).fill(0), sp=PL.specs[state.pl.spec], caster=plIsCaster(sp);
   const gearW={}; for(const [name,id] of Object.entries(state.pl.gear)){const it=plItem(id); if(it){for(const k in it.s)g[+k]+=it.s[k]; if(it.d)gearW[name]=it}}
-  for(const [name,id] of Object.entries(state.pl.ench||{})){const e=plEnch(id); if(e&&state.pl.gear[name])for(const k in e.s)g[+k]+=e.s[k]}
+  for(const [name,id] of Object.entries(state.pl.ench||{})){const e=plEnch(id,name); if(e&&state.pl.gear[name])for(const k in e.s)g[+k]+=e.s[k]}
   const L=plLevel(), sc=plStatScale(), ph=plPhase();
   const fx=plEffects(p,sp), sum=k=>fx.filter(e=>e.k===k).reduce((a,e)=>a+e.v,0), bySchool=k=>fx.filter(e=>e.k===k).reduce((o,e)=>(o[e.s]=(o[e.s]||0)+e.v,o),{});
   const R=plRanks(p.cls), own=name=>R.rank(name)>0;
@@ -1004,7 +1013,7 @@ function plStats(p){
   const hit=g[18]+sum("hit"), shit=g[18]+sum("shit");
   const spellDmg=Math.round((g[5]+g[42]+add.sd+Math.round(sum("spInt")/100*int))*(caster?apMult:1));
   const school={}; [[6,"Arcane"],[7,"Fire"],[8,"Frost"],[9,"Holy"],[10,"Nature"],[11,"Shadow"]].forEach(([k,n])=>{if(g[k])school[n]=g[k]});
-  const wd=n=>{const e=state.pl.ench&&state.pl.ench[n]&&plEnch(state.pl.ench[n]); return e&&e.wd||0}; // Striking, Impact and scopes add flat damage to that weapon (16 Sep 2026)
+  const wd=n=>{const e=state.pl.ench&&state.pl.ench[n]&&plEnch(state.pl.ench[n],n); return e&&e.wd||0}; // Striking, Impact and scopes add flat damage to that weapon (16 Sep 2026)
   const wpn=(it,n)=>it&&it.d?{min:it.d[0]+wd(n),max:it.d[1]+wd(n),speed:it.d[2],w:it.w,h:it.h,r:it.r}:null;
   const S={str,agi,sta,int,spi,ap,rap,crit,scrit,hit,shit,lessDodged:g[22],spellDmg,school,schoolPct:bySchool("school"),scritSchool:bySchool("scritSchool"),shitSchool:bySchool("shitSchool"),spellCrit:bySchool("spellCrit"),
     allDmg:sum("allDmg"),twoHand:sum("twoHand"),oneHand:sum("oneHand"),ranged:sum("ranged"),abilCrit:sum("abilCrit"),rangedAbilCrit:sum("rangedAbilCrit"),haste:sum("haste"),feralAp:g[43],
