@@ -328,8 +328,13 @@ function raidDpsInfo(p,I){
   const best=Math.max(...Object.values(tab)), name=spec.replace(/ \((Warrior|Paladin|Priest|Shaman|Druid)\)$/,"");
   // A tank is rated halfway between one-target threat and threat on a pack of four, each against its own best (16 Sep 2026, asked for: single-target TPS alone is too narrow)
   const aoeTab=m[0]==="tps"&&D.raidDps.tpsAoe, aoe=aoeTab&&aoeTab[spec];
-  if(aoe)return {key:spec,spec:name,dps:Math.round(dps),aoe:Math.round(aoe),unit:m[1],what:"raid threat estimate, one target and a pack of four",rating:round1((100*dps/best+100*aoe/Math.max(...Object.values(aoeTab)))/2)};
-  return {key:spec,spec:name,dps:Math.round(dps),unit:m[1],what:m[2],rating:round1(100*dps/best)};
+  // The number shown is this race's own (17 Sep 2026, asked for: racials change output, every race showed the same number). The table holds the
+  // class estimate on the first Horde path (tests/dps_dump.js), racials included; divide that path's race gain out and multiply this path's in.
+  // The rating stays on the class number: race fit already scores the racial, so counting it here too would count it twice.
+  const G=D.raidDps.raceGain&&D.raidDps.raceGain[spec], ref=(D.paths||[]).find(x=>x.cls===p.cls&&x.faction==="Horde")||(D.paths||[]).find(x=>x.cls===p.cls);
+  const race=G&&ref&&G[p.name]!=null&&G[ref.name]!=null?(1+G[p.name]/100)/(1+G[ref.name]/100):1;
+  if(aoe)return {key:spec,spec:name,dps:Math.round(dps*race),aoe:Math.round(aoe*race),unit:m[1],what:"raid threat estimate, one target and a pack of four",rating:round1((100*dps/best+100*aoe/Math.max(...Object.values(aoeTab)))/2)};
+  return {key:spec,spec:name,dps:Math.round(dps*race),unit:m[1],what:m[2],rating:round1(100*dps/best)};
 }
 // A class that cannot fill a role with an estimate gets the weakest estimate's rating, not its own class raid rating (16 Sep 2026: with the
 // full-size scale a Priest's class rating out-scored a Paladin tank's 239 threat, so a class that cannot tank ranked above one that can).
@@ -487,7 +492,7 @@ function detailHTML(p,I){
     <div class="breakdown"><div class="label">Why it scored ${total}${I.role!=="Any"?" · flexibility not counted because you picked a role":""}</div>
       <div class="stack" aria-hidden="true">${pr.map(x=>`<span title="${x.label}" style="width:${x.pts}%;background:${x.c}"></span>`).join("")}</div>
       <div class="legend">${pr.map(x=>`<div><i style="background:${x.c}"></i><span>${x.label} <span class="muted">${Math.round(x.w*100)}% × ${+x.raw.toFixed(1)}</span></span><span class="num">${x.pts.toFixed(1)}</span></div>`).join("")}</div>
-      ${(rd=>rd&&/^(PvE|Balanced)$/.test(I.goal)?`<p class="muted" style="margin:2px 0 0;font-size:13px">What you want to do${I.goal==="Balanced"?" (the PvE half)":""} is the planner's ${rd.what} for ${esc(rd.spec)}: ${rd.dps} ${rd.unit}${rd.aoe?` on one target and ${rd.aoe} summed over a pack of four`:""} in starter gear at 60 with raid buffs, scaled to ${rd.rating} against the best spec${rd.aoe?" (the two averaged, each against its own best)":""}. Provisional until beta numbers.</p>`:I.goal==="Pure PvP"?`<p class="muted" style="margin:2px 0 0;font-size:13px">What you want to do is the class PvP rating: how well it ranks in battlegrounds and the honor system, not its raid damage.</p>`:"")(raidDpsInfo(p,I))}
+      ${(rd=>rd&&/^(PvE|Balanced)$/.test(I.goal)?`<p class="muted" style="margin:2px 0 0;font-size:13px">What you want to do${I.goal==="Balanced"?" (the PvE half)":""} is the planner's ${rd.what} for ${esc(rd.spec)} with this race's racials: ${rd.dps} ${rd.unit}${rd.aoe?` on one target and ${rd.aoe} summed over a pack of four`:""} in starter gear at 60 with raid buffs (the class figure, before racials, scores ${rd.rating} against the best spec; the racials count in race fit)${rd.aoe?" (the two averaged, each against its own best)":""}. Provisional until beta numbers.</p>`:I.goal==="Pure PvP"?`<p class="muted" style="margin:2px 0 0;font-size:13px">What you want to do is the class PvP rating: how well it ranks in battlegrounds and the honor system, not its raid damage.</p>`:"")(raidDpsInfo(p,I))}
     </div>
     <div class="stats">${[["Beginner",p.beginner],["Solo",p.solo],["Raid",p.raid],["PvP",p.pvp],["Flexibility",p.flex],["Gold farming",p.gold],["Race fit",p.racefit],["PvE race fit",(pveRaceInfo(p,I)||{}).rating],["PvP race fit",(pvpRaceInfo(p)||{}).rating]].filter(x=>x[1]!=null).map(([l,v])=>`<span class="stat">${l}<b>${v}</b></span>`).join("")}<span class="stat">Complexity<b>${esc(p.style)}</b></span></div>
     <div class="facts">
@@ -736,8 +741,9 @@ function plOpen(pathName,specName,userPick){
     const spec=plSpecKey(p.cls,specName||plDefaultSpec(p,state.I)||"");
     if(!state.pl||state.pl.path!==pathName||state.pl.spec!==spec){
       const phase=state.pl&&state.pl.phase||"l60"; state.pl={path:pathName,spec,phase,t:null,gear:{},ench:{},raid:false,pvp:false,buffs:true,cons:false,deb:true}; state.pl.t=plPreset(p.cls,spec);
-      plAutofill(); state.plPick=null; state.plTree=undefined;
-    }
+      state.pl.goal=state.I.goal; plAutofill(); state.plPick=null; state.plTree=undefined;
+    } else if(state.pl.goal===undefined) state.pl.goal=state.I.goal; // a build from a link keeps its gear
+    else if(state.pl.goal!==state.I.goal){ const was=plSurvivalWeight(); state.pl.goal=state.I.goal; if(plSurvivalWeight()!==was){plAutofill(); state.plPick=null} } // PvP and PvE gear differ: suggest again
     if(!state.lgOff&&!Object.values(state.legacy).some(n=>n>0))plLegacyMeta(state.I.goal);
     writeHash(); renderPlanner(); if(typeof renderFind==="function")renderFind();
     if(userPick&&window.matchMedia("(max-width:900px)").matches)$("#planner").scrollIntoView({block:"start",behavior:"smooth"});
@@ -805,6 +811,21 @@ function plScore(it,slotKey,spec,hitRoom=Infinity){
   const dw=plIsCaster(sp)?0:{mh:sp.mh||1,oh:sp.oh||0,rng:sp.rng||0}[slotKey]||0; if(it.d)s+=plDps(it)*dw; // weapon damage means nothing to a caster or healer
   return s;
 }
+/* PvP gear (owner, 16 Sep 2026 about 4:50 PM: PvP "should favor staying alive"). For Pure PvP a set is priced as log(output) + 1.5 x log(effective
+   health), for Balanced with half that survival weight, so 1% more effective health is worth 1.5% (Balanced 0.75%) more damage or healing. Effective
+   health: health against a player at the character's level, half physical (armor, dodge and parry) and half magic (average resistance). PvE, Casual
+   and Gold farmer keep output alone. The goal is stamped on the build when it is planned (state.pl.goal); a build without one (the damage tables,
+   the leveling builds, an old link) is priced on output, so raid numbers never move with the page's choices. */
+const plSurvivalWeight=()=>({"Pure PvP":1.5,Balanced:.75})[state.pl&&state.pl.goal]||0;
+function plEhp(S){
+  const L=S.level||60, phys=Math.min(.75,S.armor/(S.armor+400+85*L)), mag=Math.min(.75,.75*S.resist/(5*L));
+  return S.health/(.5*(1-phys)*(1-Math.min(.5,S.avoid||0))+.5*(1-mag));
+}
+function plObjective(p,spec){ // the value a gear set is chosen by, or null when the spec has no estimate (tanks keep the stat score)
+  const st=plStats(p), e=plDpsEstimate(p,spec,st.S); if(e.none||e.kind==="tps")return null;
+  const w=plSurvivalWeight(); return w?Math.log(Math.max(1e-6,e.total))+w*Math.log(Math.max(1,plEhp(st.S))):e.total;
+}
+const plObjectiveEps=()=>plSurvivalWeight()?1e-4:0.05; // a swap has to gain more than 0.05 per second, or 0.01% on the PvP scale
 function plAutofill(){
   const p=DATA.paths.find(x=>x.name===state.pl.path), spec=state.pl.spec, g={};
   const room=slotName=>plHitCap(PL.specs[spec])-plHitOther(g,{},slotName,p,PL.specs[spec]);
@@ -821,7 +842,7 @@ function plAutofill(){
   // shows; 16 Sep 2026 the score alone handed Fury a two-hander for 517 DPS against 658). The score decides for specs without a model, or on a tie.
   // Not for tanks (16 Sep 2026): the threat estimate alone would trade the shield for a two-hander. A healer's weapon choice follows its healing estimate.
   const trial=(mh,oh)=>{const save=state.pl.gear, saveE=state.pl.ench; state.pl.gear={...g,"Main hand":mh}; if(oh)state.pl.gear["Off hand"]=oh; state.pl.ench={};
-    let d=null; try{const e=plDpsEstimate(p,spec,plStats(p).S); if(!e.none&&e.kind!=="tps")d=e.total}catch(x){} state.pl.gear=save; state.pl.ench=saveE; return d};
+    let d=null; try{d=plObjective(p,spec)}catch(x){} state.pl.gear=save; state.pl.ench=saveE; return d};
   const d2=two?trial(two.id,null):null, d1=one?trial(one.id,oh&&oh.id):null;
   const useTwo=two&&(d2!=null&&d1!=null&&d2!==d1?d2>d1:s2>=s1);
   if(useTwo){g["Main hand"]=two.id}else{if(one)g["Main hand"]=one.id;if(oh)g["Off hand"]=oh.id}
@@ -841,9 +862,9 @@ function plRefineByEstimate(p,spec){
   const enchMemo=new Map(), bestEnch=n=>{const k=n+"|"+state.pl.gear[n]; if(!enchMemo.has(k))enchMemo.set(k,plBestEnch(n,p,spec)); return enchMemo.get(k)}; // the same item in the same slot always gets the same enchant
   const sp=PL.specs[spec], evalGear=(gear,changed)=>{const saveG=state.pl.gear, saveE=state.pl.ench; state.pl.gear=gear; state.pl.ench={...baseEnch};
     for(const n of changed){delete state.pl.ench[n]; if(gear[n]){const b=bestEnch(n); if(b)state.pl.ench[n]=b}}
-    let v=null; try{const e=plDpsEstimate(p,spec,plStats(p).S); if(!e.none&&e.kind!=="tps")v=e.total}catch(x){} state.pl.gear=saveG; state.pl.ench=saveE; return v};
+    let v=null; try{v=plObjective(p,spec)}catch(x){} state.pl.gear=saveG; state.pl.ench=saveE; return v};
   const baseEnch={...state.pl.ench}, saveOuter=state.pl.gear;
-  let g={...state.pl.gear}, cur=evalGear(g,[]); if(cur==null)return;
+  let g={...state.pl.gear}, cur=evalGear(g,[]); if(cur==null)return; const eps=plObjectiveEps();
   const topBy=(key,list,slotName,n,perType)=>{const save=state.pl.gear; state.pl.gear=g; const hr=plHitRoom(slotName,p,spec); state.pl.gear=save;
     const sorted=list.slice().sort((a,b)=>plScore(b,key,spec,hr)-plScore(a,key,spec,hr)); if(!perType)return sorted.slice(0,n);
     const by={}; for(const it of sorted){const t=it.h===4?"2h"+it.w:it.w; (by[t]=by[t]||[]).length<n&&by[t].push(it)} return Object.values(by).flat()};
@@ -853,8 +874,8 @@ function plRefineByEstimate(p,spec){
     let best=cur, pick=null;
     for(const mh of mhs){
       const base={...g}; delete base["Off hand"]; base["Main hand"]=mh.id;
-      if(mh.h===4){const v=evalGear(base,["Main hand","Off hand"]); if(v!=null&&v>best+0.05){best=v;pick=base} continue}
-      for(const oh of [null,...ohs]){if(oh&&oh.id===mh.id)continue; const t={...base}; if(oh)t["Off hand"]=oh.id; const v=evalGear(t,["Main hand","Off hand"]); if(v!=null&&v>best+0.05){best=v;pick=t}}
+      if(mh.h===4){const v=evalGear(base,["Main hand","Off hand"]); if(v!=null&&v>best+eps){best=v;pick=base} continue}
+      for(const oh of [null,...ohs]){if(oh&&oh.id===mh.id)continue; const t={...base}; if(oh)t["Off hand"]=oh.id; const v=evalGear(t,["Main hand","Off hand"]); if(v!=null&&v>best+eps){best=v;pick=t}}
     }
     if(pick){g=pick;cur=best;state.pl.gear=g;for(const n of ["Main hand","Off hand"]){delete baseEnch[n]; if(g[n]){const b=bestEnch(n); if(b)baseEnch[n]=b}};state.pl.gear=saveOuter}
   };
@@ -863,12 +884,14 @@ function plRefineByEstimate(p,spec){
       if(name==="Main hand"||name==="Off hand")continue;
       const other=Object.entries(g).filter(([n])=>n!==name&&PL_SLOTS.find(x=>x[0]===n)[1]===key).map(([,id])=>id);
       const list=(key==="rng"?plCandidates("rng",p,spec):typeof key==="number"?plCandidates(key,p,spec):[]).filter(it=>!other.includes(it.id));
-      for(const it of topBy(key,list,name,8,false)){if(g[name]===it.id)continue; const t={...g,[name]:it.id}, v=evalGear(t,[name]); if(v!=null&&v>cur+0.05){cur=v;g=t;state.pl.gear=g;delete baseEnch[name];const b=bestEnch(name);if(b)baseEnch[name]=b;state.pl.gear=saveOuter}}
+      const tough=plSurvivalWeight()?list.slice().sort((a,b)=>plToughness(b)-plToughness(a)).slice(0,4):[]; // PvP: the stat weights ignore stamina and armor, so the four toughest items join the field
+      for(const it of [...new Set([...topBy(key,list,name,8,false),...tough])]){if(g[name]===it.id)continue; const t={...g,[name]:it.id}, v=evalGear(t,[name]); if(v!=null&&v>cur+eps){cur=v;g=t;state.pl.gear=g;delete baseEnch[name];const b=bestEnch(name);if(b)baseEnch[name]=b;state.pl.gear=saveOuter}}
     }
   };
   weapons(); others(); others(); weapons();
   state.pl.gear=g; plAutofillEnch();
 }
+const plToughness=it=>(it.s[2]||0)*10+(it.s[34]||0)+((it.s[26]||0)+(it.s[40]||0))*.5+[35,36,37,38,39].reduce((a,k)=>a+(it.s[k]||0),0)*2;
 /* The race's own base stats replaced by the average of the races this class can be, with every racial switched off (state.pl.noRacial): what the class
    would do with no race at all. The race-fit measurement compares each race with it (16 Sep 2026). */
 function plRaceBaseAvg(p){
@@ -903,8 +926,20 @@ function plAlternates(slotName,key,p,spec,n=3){
   const used=Object.entries(state.pl.gear).filter(([s])=>s!==slotName).map(([,id])=>id);
   const cur=state.pl.gear[slotName];
   const hr=plHitRoom(slotName,p,spec);
-  return plCandidates(key,p,spec).filter(it=>!used.includes(it.id)).sort((a,b)=>plScore(b,key,spec,hr)-plScore(a,key,spec,hr)).slice(0,n).map((it,i)=>({it,rank:i+1,chosen:it.id===cur}));
+  const list=plCandidates(key,p,spec).filter(it=>!used.includes(it.id)).sort((a,b)=>plScore(b,key,spec,hr)-plScore(a,key,spec,hr));
+  if(plSurvivalWeight()&&typeof key==="number"){ // PvP (16 Sep 2026): rank by the same value the gear was chosen by, so the chosen item reads as the best
+    const memoKey=[state.pl.goal,state.pl.phase,JSON.stringify(state.pl.gear),JSON.stringify(state.pl.ench),state.pl.buffs,state.pl.deb,state.pl.cons,plTalentString(state.pl.t),slotName].join("|");
+    if(!plAltMemo.has(memoKey)){
+      const pool=[...new Set([...list.slice(0,8),...list.slice().sort((a,b)=>plToughness(b)-plToughness(a)).slice(0,4),...(cur&&plItem(cur)?[plItem(cur)]:[])])];
+      const saveG=state.pl.gear, v=it=>{state.pl.gear={...saveG,[slotName]:it.id}; let x=null; try{x=plObjective(p,spec)}catch(e){} state.pl.gear=saveG; return x};
+      const scored=pool.map(it=>({it,v:v(it)})); if(plAltMemo.size>400)plAltMemo.clear();
+      plAltMemo.set(memoKey,scored.every(x=>x.v!=null)?scored.sort((a,b)=>b.v-a.v).map(x=>x.it):null);
+    }
+    const ranked=plAltMemo.get(memoKey); if(ranked)return ranked.slice(0,n).map((it,i)=>({it,rank:i+1,chosen:it.id===cur}));
+  }
+  return list.slice(0,n).map((it,i)=>({it,rank:i+1,chosen:it.id===cur}));
 }
+const plAltMemo=new Map();
 /* A source of just "(Zone)" is a drop from that dungeon with no named boss (765 items, 16 Sep 2026). */
 const plSrcText=it=>!it.src?"":/^\((.+)\)$/.test(it.src)?"drops in "+RegExp.$1:it.src;
 const plSrcShort=it=>it.src?plSrcText(it).replace(/^Vendor: /,"vendor: ").replace(/^Quest: /,"quest: "):"world drop";
@@ -987,6 +1022,8 @@ function plStats(p){
   pushPct("allDmg","All damage"); pushPct("twoHand","Two-handed weapon damage"); pushPct("oneHand","One-handed weapon damage"); pushPct("ranged","Ranged weapon damage"); pushPct("abilCrit","Ability crit damage bonus"); pushPct("rangedAbilCrit","Ranged ability crit damage bonus"); pushPct("haste","Attack speed");
   for(const [s,v] of Object.entries(S.schoolPct))effects.push(`${s} spell damage +${v}%`); for(const [s,v] of Object.entries(S.scritSchool))effects.push(`${s} spell crit +${v}%`); for(const [s,v] of Object.entries(S.shitSchool))effects.push(`${s} spell hit +${v}%`); for(const [s,v] of Object.entries(S.spellCrit))effects.push(`${s} crit damage bonus +${v}%`);
   const sources=[...new Set(fx.map(e=>e.src))];
+  const rv=n=>+((rows.find(x=>x&&x[0]===n)||[])[1])||0; // survival figures for the PvP gear choice (16 Sep 2026)
+  S.health=rv("Health"); S.armor=rv("Armor"); S.avoid=(g[31]+sum("dodge")+g[32]+sum("parry"))/100; S.resist=[35,36,37,38,39].reduce((a,k)=>a+g[k],0)/5;
   return {rows:rows.filter(x=>x&&x[1]!==null&&x[1]!==""),S,effects,sources};
 }
 /* --- render --- */
@@ -1017,7 +1054,7 @@ function renderPlanner(){
     <div class="pl-actions"><button class="btn small" id="plPreset" ${sp.talents?"":"disabled"}>Load suggested talents</button><button class="btn small" id="plClearT">Clear talents</button><button class="btn small" id="plAuto">Suggest starter gear</button>${plPhase().raid?`<span class="muted" style="font-size:13px">raid tier included</span>`:`<label><input type="checkbox" id="plRaid" ${state.pl.raid?"checked":""}> include raid-tier items</label>`}<label><input type="checkbox" id="plPvp" ${state.pl.pvp?"checked":""}> include PvP rank rewards</label><button class="btn small" id="plLink">Copy link to this build</button></div>
     <details class="pl-about"><summary>Where these suggestions come from, and what the marks mean</summary>
       <p>${esc(PL.credit)} ${sp.talents?(plChosenKey(sp)?`The suggested talents for level ${plLevel()} are the ${plMaxPts()} points that raise this page's damage estimate most on the Forever trees (chosen by the estimate itself with starter gear on a Horde character, not copied from a Classic guide), so a talent the estimate does not model yet is not picked.`:"The suggested talents are this page's own first build on the Forever trees, written from the talent text before anyone has played it; no guide has published Forever builds yet."):"No suggested build for this spec yet; place the points yourself."}</p>
-      <p>Starter gear is the best set this page's own damage or healing estimate finds for this race, talents and phase (stat weights narrow the choices; racials such as an Orc's axe bonus count), from Classic ${plPhase().raid?"dungeon, quest, crafted, vendor, world and raid-tier items":`dungeon, quest, crafted, vendor and world items up to item level ${plPhase().ilvl}${state.pl.raid?", plus raid-tier items":""}`}${state.pl.pvp?", plus PvP rank rewards":""}, with hit valued only up to its cap and weapon damage only for specs that swing. Forever's new dungeons and reworked loot are not in any database yet. Hover a talent for its text, and an item for its Wowhead Forever tooltip. Click a choice icon to use that item; the item name opens Wowhead's Forever database, which will refresh from the beta and launch clients.</p>
+      <p>Starter gear is the best set this page's own damage or healing estimate finds for this race, talents and phase${plSurvivalWeight()?` (for ${esc(state.pl.goal)}, staying alive counts too: 1% more effective health, about ${plEhp(plStats(DATA.paths.find(x=>x.name===state.pl.path)).S).toFixed(0)} now from health, armor, dodge, parry and resistances, is worth ${plSurvivalWeight()}% more output)`:""} (stat weights narrow the choices; racials such as an Orc's axe bonus count), from Classic ${plPhase().raid?"dungeon, quest, crafted, vendor, world and raid-tier items":`dungeon, quest, crafted, vendor and world items up to item level ${plPhase().ilvl}${state.pl.raid?", plus raid-tier items":""}`}${state.pl.pvp?", plus PvP rank rewards":""}, with hit valued only up to its cap and weapon damage only for specs that swing. Forever's new dungeons and reworked loot are not in any database yet. Hover a talent for its text, and an item for its Wowhead Forever tooltip. Click a choice icon to use that item; the item name opens Wowhead's Forever database, which will refresh from the beta and launch clients.</p>
       <p><b class="fx fx-new">N</b> marks a talent that is new in Forever. <b class="fx">F</b> marks one with a reported change, listed under “What Forever changes”. Every change you make here saves in the page link.</p>
     </details>
   </div>
