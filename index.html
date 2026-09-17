@@ -476,12 +476,12 @@ function readHash(){
   if(h.get("lg")==="0")state.lgOff=true; else if(h.get("lg"))h.get("lg").split("~").forEach(x=>{const [i,n]=x.split(".");if(DATA.legacy[+i])state.legacy[+i]=+n});
   // Old links: t= (tabs) and cmp= (compare) are gone. A guide or sources tab opens as its More panel; anything else lands on the main screen.
   if(h.get("t")&&MORE_FROM_TAB[h.get("t")]&&document.querySelector(`[data-more="${MORE_FROM_TAB[h.get("t")]}"]`))state.more=MORE_FROM_TAB[h.get("t")];
-  if(h.get("pl")){const [pi,spec,tal,gear,raid,pvp,ver,opt,ench,phase]=h.get("pl").split("|");const p=DATA.paths[+pi];if(p){state.pl={path:p.name,spec,tStr:tal||"",gearStr:gear||"",raid:raid==="1",pvp:pvp==="1",ver:ver||"",opt:opt||"",enchStr:ench||"",phase:phase||"l60",t:null,gear:{},ench:{}}}}
+  if(h.get("pl")){const [pi,spec,tal,gear,raid,pvp,ver,opt,ench,phase,prof]=h.get("pl").split("|");const p=DATA.paths[+pi];if(p){state.pl={path:p.name,spec,tStr:tal||"",gearStr:gear||"",raid:raid==="1",pvp:pvp==="1",ver:ver||"",opt:opt||"",enchStr:ench||"",phase:phase||"l60",profStr:prof||"",t:null,gear:{},ench:{}}}} // prof is the eleventh field, added 17 Sep 2026: an older link simply has no professions
 }
 function writeHash(){
   const h=new URLSearchParams();
   for(const k in SHORT)if(state.I[k]!==DEFAULTS[k])h.set(SHORT[k],state.I[k]);
-  if(state.pl&&state.pl.t)h.set("pl",[DATA.paths.findIndex(p=>p.name===state.pl.path),state.pl.spec,plTalentString(state.pl.t),PL_SLOTS.map(([n])=>state.pl.gear[n]||"").join(","),state.pl.raid?1:0,state.pl.pvp?1:0,PL?PL.treeVer:"",`b${state.pl.buffs?1:0}c${state.pl.cons?1:0}d${state.pl.deb?1:0}`,PL_SLOTS.map(([n])=>(state.pl.ench||{})[n]||"").join(","),state.pl.phase||"l60"].join("|"));
+  if(state.pl&&state.pl.t)h.set("pl",[DATA.paths.findIndex(p=>p.name===state.pl.path),state.pl.spec,plTalentString(state.pl.t),PL_SLOTS.map(([n])=>state.pl.gear[n]||"").join(","),state.pl.raid?1:0,state.pl.pvp?1:0,PL?PL.treeVer:"",`b${state.pl.buffs?1:0}c${state.pl.cons?1:0}d${state.pl.deb?1:0}k${state.pl.beast?1:0}`,PL_SLOTS.map(([n])=>(state.pl.ench||{})[n]||"").join(","),state.pl.phase||"l60",(state.pl.prof||["",""]).join("~")].join("|"));
   const lg=Object.entries(state.legacy).filter(([,n])=>n>0).map(([i,n])=>i+"."+n).join("~");if(lg)h.set("lg",lg);else if(state.lgOff)h.set("lg","0"); // lg=0: cleared on purpose
   history.replaceState(null,"","#"+h.toString());
 }
@@ -780,7 +780,7 @@ function plOpen(pathName,specName,userPick){
     if(!state.pl||state.pl.path!==pathName||state.pl.spec!==spec){
       // the goal is stamped before the preset is chosen, not after: plPreset reads it to decide between the damage build and the
       // Pure PvP one, and a build opened with no goal on it would always come back as the damage build (17 Sep 2026)
-      const phase=state.pl&&state.pl.phase||"l60"; state.pl={path:pathName,spec,phase,goal:state.I.goal,t:null,gear:{},ench:{},lock:{},enchLock:{},raid:false,pvp:false,buffs:true,cons:false,deb:true}; state.pl.t=plPreset(p.cls,spec);
+      const phase=state.pl&&state.pl.phase||"l60"; state.pl={path:pathName,spec,phase,goal:state.I.goal,t:null,gear:{},ench:{},lock:{},enchLock:{},raid:false,pvp:false,buffs:true,cons:false,deb:true,prof:["",""],beast:false}; state.pl.t=plPreset(p.cls,spec);
       plAutofill(); state.plPick=null; state.plTree=undefined;
     } else if(state.pl.goal===undefined) state.pl.goal=state.I.goal; // a build from a link keeps its gear
     else if(state.pl.goal!==state.I.goal){ const was=plSurvivalWeight(), wasPreset=plTalentString(state.pl.t)===plTalentString(plPreset(p.cls,state.pl.spec)); state.pl.goal=state.I.goal;
@@ -1042,12 +1042,24 @@ function plEffects(p,sp){
   DATA.legacy.forEach((l,i)=>{const r=state.legacy[i]||0; if(r&&l.fx)l.fx.forEach(e=>out.push({...e,v:e.v*r,src:"Legacy: "+l.Perk}))});
   return out;
 }
+/* Professions (17 Sep 2026). Two primary professions, the way the game works. Their perks join the talent and racial effects in
+   plStats, so a profession changes the same numbers everything else does and the suggested gear is chosen with it. Only three
+   perks have numbers published anywhere - Mining's health, Skinning's damage to Beasts and Dragonkin, Alchemy's stronger elixirs -
+   and all three trace to BlizzCon attendee notes rather than a Blizzard post. The rest are listed with what they do and no effect,
+   because a made-up number would be worse than an honest gap. */
+const plProfList=()=>(PL&&PL.profPerks)||[];
+const plProfChosen=()=>((state.pl&&state.pl.prof)||[]).filter(Boolean);
+function plProfFx(){
+  const out=[];
+  for(const name of plProfChosen()){const pr=plProfList().find(x=>x.n===name); if(pr)for(const e of pr.fx||[])out.push({...e,src:name});}
+  return out;
+}
 function plStats(p){
   const b=PL.base.cls[p.cls], r=state.pl.noRacial?plRaceBaseAvg(p):(PL.base.race[p.race]||{}), g=Array(44).fill(0), sp=PL.specs[state.pl.spec], caster=plIsCaster(sp);
   const gearW={}; for(const [name,id] of Object.entries(state.pl.gear)){const it=plItem(id); if(it){for(const k in it.s)g[+k]+=it.s[k]; if(it.d)gearW[name]=it}}
   for(const [name,id] of Object.entries(state.pl.ench||{})){const e=plEnch(id,name); if(e&&state.pl.gear[name])for(const k in e.s)g[+k]+=e.s[k]}
   const L=plLevel(), sc=plStatScale(), ph=plPhase();
-  const fx=plEffects(p,sp), sum=k=>fx.filter(e=>e.k===k).reduce((a,e)=>a+e.v,0), bySchool=k=>fx.filter(e=>e.k===k).reduce((o,e)=>(o[e.s]=(o[e.s]||0)+e.v,o),{});
+  const fx=plEffects(p,sp).concat(plProfFx()), sum=k=>fx.filter(e=>e.k===k).reduce((a,e)=>a+e.v,0), bySchool=k=>fx.filter(e=>e.k===k).reduce((o,e)=>(o[e.s]=(o[e.s]||0)+e.v,o),{});
   const R=plRanks(p.cls), own=name=>R.rank(name)>0;
   const buffs=state.pl.buffs, cons=state.pl.cons, deb=state.pl.deb;
   const add={str:0,agi:0,sta:0,int:0,spi:0,ap:0,rap:0,crit:0,sd:0};
@@ -1056,7 +1068,10 @@ function plStats(p){
   if(p.cls==="Warrior"&&/^(Fury|Arms)$/.test(state.pl.spec))add.crit+=3; // Berserker Stance: +3% crit (found missing in the 15 Sep WoWSims comparison)
   if(p.cls==="Hunter"&&own("Trueshot Aura"))add.rap+=100;
   if(p.cls==="Druid"&&own("Leader of the Pack"))add.crit+=3;
-  if(cons){if(caster){add.sd+=185;add.int+=10}else{add.agi+=25;add.crit+=2;add.str+=30+20;add.ap+=35}}
+  // Alchemy's Mixology makes every elixir and flask stronger, so it multiplies the consumable block and nothing else (crit is a
+  // flat percentage from a consumable, so it scales the same way). With consumables off, Alchemy is worth nothing here.
+  if(cons){const mix=1+sum("consPct")/100;
+    if(caster){add.sd+=185*mix;add.int+=10*mix}else{add.agi+=25*mix;add.crit+=2*mix;add.str+=(30+20)*mix;add.ap+=35*mix}}
   const pct=k=>1+sum(k)/100;
   const pctBuffed=k=>1+(sum(k)+(buffs?10:0))/100; // Blessing of Kings, baseline in Forever: +10% Str/Agi/Sta/Int/Spirit on top of any talent or racial percent (16 Sep 2026 audit: Kings was missing entirely)
   for(const k in add)if(k!=="crit")add[k]=Math.round(add[k]*sc); // buff ranks are lower before 60; a percent (Leader of the Pack, Mongoose) is not
@@ -1074,7 +1089,7 @@ function plStats(p){
   const wd=n=>{const e=state.pl.ench&&state.pl.ench[n]&&plEnch(state.pl.ench[n],n); return e&&e.wd||0}; // Striking, Impact and scopes add flat damage to that weapon (16 Sep 2026)
   const wpn=(it,n)=>it&&it.d?{min:it.d[0]+wd(n),max:it.d[1]+wd(n),speed:it.d[2],w:it.w,h:it.h,r:it.r}:null;
   const S={str,agi,sta,int,spi,ap,rap,crit,scrit,hit,shit,lessDodged:g[22],spellDmg,school,schoolPct:bySchool("school"),scritSchool:bySchool("scritSchool"),shitSchool:bySchool("shitSchool"),spellCrit:bySchool("spellCrit"),
-    allDmg:sum("allDmg"),twoHand:sum("twoHand"),oneHand:sum("oneHand"),ranged:sum("ranged"),abilCrit:sum("abilCrit"),rangedAbilCrit:sum("rangedAbilCrit"),haste:sum("haste"),feralAp:g[43],
+    allDmg:sum("allDmg")+(state.pl.beast?sum("beastDmg"):0),twoHand:sum("twoHand"),oneHand:sum("oneHand"),ranged:sum("ranged"),abilCrit:sum("abilCrit"),rangedAbilCrit:sum("rangedAbilCrit"),haste:sum("haste"),feralAp:g[43],
     mh:wpn(gearW["Main hand"],"Main hand"),oh:wpn(gearW["Off hand"],"Off hand"),rng:wpn(gearW["Ranged"],"Ranged"),deb,debSchool:deb?{Fire:1,Frost:1,Shadow:1,Arcane:1}:{},targetArmor:Math.round((deb?DPS_TARGET.armor-2250-505-640:DPS_TARGET.armor)*L/60),level:L,abil:L/60,target:ph.target,caster,fx,
     cls:p.cls,mana:b.mana?Math.round((b.mana*sc+int*15+g[23])*(1+sum("manaPct")/100)):0,mp5:g[12]+(buffs&&b.mana?Math.round(33*sc):0),blockValue:g[30],block:5+g[29]+sum("block"),healing:Math.round(g[41]+g[5]+Math.round(sum("spInt")/100*int))}; // healing power and mana for the healing estimate, block value for Shield Slam (16 Sep 2026); raid buffs include Blessing of Wisdom (33 mana per 5 s) for mana users
   const schoolTxt=Object.entries(school).map(([n,v])=>`+${v} ${n}`).join(", ");
@@ -1159,7 +1174,9 @@ function renderPlanner(){
   const rb=$("#plRaid"); if(rb)rb.onchange=e=>{state.pl.raid=e.target.checked;plAutofill();writeHash();renderPlanner()}; // the pool changed, so the suggestion is made again (16 Sep 2026: ticking it used to change nothing until Suggest was pressed)
   const pb=$("#plPvp"); if(pb)pb.onchange=e=>{state.pl.pvp=e.target.checked;plAutofill();writeHash();renderPlanner()};
   $("#plLink").onclick=()=>copyText(location.href,"Link copied");
-  ["buffs","cons","deb"].forEach(k=>{const c=$("#plOpt-"+k); if(c)c.onchange=e=>{state.pl[k]=e.target.checked;writeHash();renderPlanner();plAutoGear()}});
+  ["buffs","cons","deb","beast"].forEach(k=>{const c=$("#plOpt-"+k); if(c)c.onchange=e=>{state.pl[k]=e.target.checked;writeHash();renderPlanner();plAutoGear()}});
+  const pc=$("#plProfClear"); if(pc)pc.onclick=()=>{state.pl.prof=["",""];writeHash();renderPlanner();plAutoGear()};
+  el.querySelectorAll("[data-prof]").forEach(sel=>sel.onchange=()=>{const i=+sel.dataset.prof; state.pl.prof=(state.pl.prof||["",""]).slice(); state.pl.prof[i]=sel.value; if(sel.value&&state.pl.prof[1-i]===sel.value)state.pl.prof[1-i]=""; /* two slots, never the same profession twice */ writeHash(); renderPlanner(); plAutoGear()});
   el.querySelectorAll("[data-lg]").forEach(b=>b.onclick=()=>{const i=+b.dataset.lg;state.legacy[i]=Math.max(0,(state.legacy[i]||0)+ +b.dataset.d);writeHash();renderPlanner();plAutoGear()});
   const lr=$("#plLegacyReset"); if(lr)lr.onclick=()=>{state.legacy={};state.lgOff=true;state.lgGoal=null;writeHash();renderPlanner();plAutoGear()}; // stays cleared (16 Sep 2026: the next click used to refill it)
   const lm=$("#plLegacyMeta"); if(lm)lm.onclick=()=>{plLegacyMeta(state.I.goal);writeHash();renderPlanner();plAutoGear()};
@@ -1238,17 +1255,46 @@ function plForeverHTML(cls,fv){
 }
 
 
+/* The two profession slots, what each one is worth here, and what it costs to take a different pair. The cost line is measured,
+   not asserted: the estimate is run again with no professions and the difference shown, so a visitor can see for themselves that
+   most of these are worth nothing yet (17 Sep 2026, the owner: "there needs to be a profession selector to see how it effects
+   dps when you choose the non suggested or non meta"). */
+function plProfHTML(){
+  const list=plProfList(); if(!list.length)return "";
+  const chosen=(state.pl.prof||["",""]), picked=chosen.filter(Boolean);
+  const sel=i=>`<select data-prof="${i}" aria-label="Profession ${i+1}"><option value="">none</option>${list.map(pr=>`<option value="${esc(pr.n)}" ${chosen[i]===pr.n?"selected":""} ${chosen[1-i]===pr.n?"disabled":""}>${esc(pr.n)}</option>`).join("")}</select>`;
+  const lines=picked.map(n=>{const pr=list.find(x=>x.n===n); return pr?`<li><b>${esc(pr.n)}</b> - ${esc(pr.b)}: ${esc(pr.t)} <span class="muted">(${esc(pr.note)})</span></li>`:""}).join("");
+  return `<div class="pl-prof" style="margin:8px 0 0">
+    <div class="label">Professions <span class="muted" style="font-weight:400;text-transform:none">- two primary, as in the game</span></div>
+    <div class="chips" style="margin:4px 0">${sel(0)}${sel(1)}${picked.length?`<button class="btn small" id="plProfClear">Clear</button>`:""}${(d=>d===null?"":`<span class="muted" style="font-size:13px">${d>0.05?`worth <b class="num" style="color:var(--gold)">${d.toFixed(1)}</b> per second here`:d<-0.05?`costs <b class="num">${(-d).toFixed(1)}</b> per second here`:"worth nothing to this estimate yet"}</span>`)(plProfDelta())}</div>
+    ${lines?`<ul class="muted" style="font-size:13px;padding-left:18px;margin:4px 0">${lines}</ul>`:`<p class="muted" style="font-size:13px;margin:4px 0">Pick two to see what they change. Most change nothing yet.</p>`}
+    <p class="muted" style="font-size:13px;margin:4px 0">Only Mining, Skinning and Alchemy have numbers published anywhere, and all of them trace back to BlizzCon attendee notes rather than a Blizzard post - the sites even disagree on whether Mining gives health or Stamina. The rest are listed with what they do and change nothing here until a beta tooltip says what they are worth.</p>
+  </div>`;
+}
+/* What the chosen professions are worth per second, measured: the estimate with them, minus the estimate with none. Null when the
+   spec has no damage model. Health-only perks (Mining) come out at zero here, which is the true answer for a damage number. */
+function plProfDelta(){
+  if(!plProfChosen().length)return null;
+  const p=DATA.paths.find(x=>x.name===state.pl.path); if(!p)return null;
+  const with_=plDpsEstimate(p,state.pl.spec,plStats(p).S); if(with_.none)return null;
+  const keep=state.pl.prof; state.pl.prof=["",""];
+  let without;
+  try{without=plDpsEstimate(p,state.pl.spec,plStats(p).S)}finally{state.pl.prof=keep} // always put the choice back, even if the estimate throws
+  return without.none?null:with_.total-without.total;
+}
 /* --- DPS estimate panel (model in dps.js) with the buff, consumable and boss-debuff toggles --- */
 function plDpsHTML(p,spec,S){
   const est=plDpsEstimate(p,spec,S);
   const opt=(k,label,title)=>`<label class="muted" style="font-size:13px" title="${esc(title)}"><input type="checkbox" id="plOpt-${k}" ${state.pl[k]?"checked":""}> ${label}</label>`;
-  const toggles=`<div class="chips" style="margin:6px 0">${opt("buffs","raid buffs",PL_RAID_BUFFS.map(x=>x.join(": ")).join("\n"))}${opt("cons","consumables",(S.caster?PL_CONS_CASTER:PL_CONS_MELEE).map(x=>x.join(": ")).join("\n"))}${opt("deb","boss debuffs",PL_DEBUFFS.map(x=>x.join(": ")).join("\n"))}</div>`;
-  if(est.none)return `<div class="tip pl-dps"><h3>Damage estimate</h3><p class="muted" style="font-size:14px;margin:4px 0">${est.none==="tank"||est.none==="healer"?`No damage estimate for a ${est.none} spec. Pick a damage spec above to see one.`:est.none==="weapon"?"Equip a main-hand weapon to see an estimate.":est.none==="ranged"?"Equip a ranged weapon to see an estimate.":"No damage model for this spec yet."}</p>${toggles}</div>`;
+  const toggles=`<div class="chips" style="margin:6px 0">${opt("buffs","raid buffs",PL_RAID_BUFFS.map(x=>x.join(": ")).join("\n"))}${opt("cons","consumables",(S.caster?PL_CONS_CASTER:PL_CONS_MELEE).map(x=>x.join(": ")).join("\n"))}${opt("deb","boss debuffs",PL_DEBUFFS.map(x=>x.join(": ")).join("\n"))}${opt("beast","boss is a Beast or Dragonkin","Onyxia and most of Blackwing Lair are Dragonkin. Only Skinning's perk depends on this.")}</div>`;
+  const profs=plProfHTML();
+  if(est.none)return `<div class="tip pl-dps"><h3>Damage estimate</h3><p class="muted" style="font-size:14px;margin:4px 0">${est.none==="tank"||est.none==="healer"?`No damage estimate for a ${est.none} spec. Pick a damage spec above to see one.`:est.none==="weapon"?"Equip a main-hand weapon to see an estimate.":est.none==="ranged"?"Equip a ranged weapon to see an estimate.":"No damage model for this spec yet."}</p>${toggles}${profs}</div>`;
   const rc=PL_RACIAL[p.race], heal=est.kind==="hps", tank=est.kind==="tps";
   return `<div class="tip pl-dps"><h3>${heal?"Healing estimate":tank?"Threat estimate":"Damage estimate"} <span class="muted" style="font-weight:400;font-size:13px">${heal?`over a ${TANK_FIGHT/60}-minute raid fight`:`against a ${esc(S.target)}`}</span></h3>
     <div class="pl-dpsnum"><b class="num" id="plDpsTotal">${Math.round(est.total)}</b><span class="muted"> ${heal?"healing per second (HPS)":tank?"threat per second (TPS)":"DPS"}, estimated</span></div>
     ${tank&&est.aoe?`<div class="pl-dpsnum"><b class="num" id="plDpsAoe">${Math.round(est.aoe.total)}</b><span class="muted"> threat per second on a pack of ${est.aoe.targets}, estimated. The class ranking averages the two.</span></div>`:""}
     ${toggles}
+    ${profs}
     <div class="pl-statgrid" style="grid-template-columns:auto auto">${est.parts.map(([n,v])=>`<span>${esc(n)}</span><b class="num">${Math.round(v)}</b>`).join("")}</div>
     ${tank&&est.aoe?`<details style="margin-top:6px"><summary class="label" style="cursor:pointer">Pack of ${est.aoe.targets}</summary><div class="pl-statgrid" style="grid-template-columns:auto auto">${est.aoe.parts.map(([n,v])=>`<span>${esc(n)}</span><b class="num">${Math.round(v)}</b>`).join("")}</div><ul class="muted" style="font-size:13px;padding-left:18px;margin:6px 0">${est.aoe.notes.map(n=>`<li>${esc(n)}</li>`).join("")}</ul></details>`:""}
     <details style="margin-top:8px"><summary class="label" style="cursor:pointer">How this number is made</summary><ul class="muted" style="font-size:13px;padding-left:18px;margin:6px 0">
@@ -1286,7 +1332,9 @@ function plRestore(){
   state.pl.lock={}; for(const [n] of PL_SLOTS)state.pl.lock[n]=state.pl.gear[n]||0; state.pl.enchLock={...state.pl.ench}; // a shared build keeps the sender's gear as talents change; "Back to suggested gear" lets it follow again (17 Sep 2026)
   state.pinned=state.pl.path; // the linked build stays until the visitor picks another row (16 Sep 2026: the first choice click used to replace it)
   if(!PL.phases[state.pl.phase])state.pl.phase="l60";
-  const o=state.pl.opt||""; state.pl.buffs=!/b0/.test(o); state.pl.cons=/c1/.test(o); state.pl.deb=!/d0/.test(o);
+  const o=state.pl.opt||""; state.pl.buffs=!/b0/.test(o); state.pl.cons=/c1/.test(o); state.pl.deb=!/d0/.test(o); state.pl.beast=/k1/.test(o);
+  const known=new Set(plProfList().map(x=>x.n)); // only real profession names off a link, and never the same one twice
+  const pr=(state.pl.profStr||"").split("~").map(x=>known.has(x)?x:"" ); state.pl.prof=[pr[0]||"",pr[1]&&pr[1]!==pr[0]?pr[1]:""]; delete state.pl.profStr;
   delete state.pl.tStr; delete state.pl.gearStr; delete state.pl.opt;
 }
 
