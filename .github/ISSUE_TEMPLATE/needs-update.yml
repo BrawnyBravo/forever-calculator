@@ -1,0 +1,29 @@
+name: Something needs an update
+description: A talent, item, number or ranking that is wrong or out of date
+title: "[Needs update] "
+labels: ["needs update"]
+body:
+  - type: input
+    id: where
+    attributes:
+      label: What is wrong?
+      description: For example "Mortal Strike damage", "Orc racial", "Fury ranking in PvE".
+    validations:
+      required: true
+  - type: textarea
+    id: correct
+    attributes:
+      label: What should it be?
+      description: What you saw in the beta or live game.
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source (optional)
+      description: A link to a Blizzard post, a screenshot, a log or a video.
+  - type: input
+    id: build
+    attributes:
+      label: Link to your build (optional)
+      description: Copy the page address after planning, so I can see exactly what you saw.

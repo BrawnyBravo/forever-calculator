@@ -1,0 +1,16 @@
+name: Suggestion
+description: An idea to make the planner better
+title: "[Suggestion] "
+labels: ["suggestion"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to see?
+      description: Describe the idea and why it would help.
+    validations:
+      required: true
+  - type: input
+    id: class
+    attributes:
+      label: Class, race or spec (if it applies)
