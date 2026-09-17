@@ -913,7 +913,7 @@ function plEnchFits(e,slotName,it){
 }
 // WoWSims gives same-valued enchants for different slots one effect id (16 pairs, e.g. 2564 is both the gloves' and the weapon's +15 Agility),
 // so a bare id lookup named a weapon enchant "Enchant Gloves - Superior Agility". With the slot it picks the one that fits there; ids and links
-// stay as they were (17 Sep 2026).
+// stay as they were (16 Sep 2026).
 const plEnch=(id,slotName,it)=>{const all=PL.enchants.filter(e=>e.id===id); if(all.length<2||!slotName)return all[0];
   if(it===undefined)it=plItem(state.pl.gear[slotName]); return all.find(e=>plEnchFits(e,slotName,it))||all[0]};
 function plEnchCandidates(slotName,it,p){
