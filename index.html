@@ -165,7 +165,9 @@ details.char{padding:4px 16px 12px}
 details.char summary{cursor:pointer;padding:10px 0;display:flex;justify-content:space-between;gap:10px;align-items:baseline;list-style:none}
 details.char summary::-webkit-details-marker{display:none}
 .foot-note{margin-top:40px;padding-top:14px;border-top:1px solid var(--frame);font-size:13px;color:var(--ink-3)}
-.foot-note .tip{margin-left:6px;color:var(--ink-2);white-space:nowrap}
+.tipbtn{margin-left:auto;display:inline-flex;align-items:center;gap:6px;text-decoration:none;border-color:var(--gold-soft);color:var(--gold);background:#1e1a0e;font-weight:600;font-size:15px;padding:8px 16px}
+.tipbtn:hover{background:#2a2410;border-color:var(--gold)}
+@media (max-width:700px){.tipbtn{margin-left:0;width:100%;justify-content:center}}
 
 /* ---- Planner ---- */
 .pl-head{display:flex;flex-wrap:wrap;gap:var(--s3) var(--s5);align-items:flex-start;padding:var(--s3) var(--s4)}
@@ -261,6 +263,7 @@ details.char summary::-webkit-details-marker{display:none}
     <button class="btn small" data-more="checks" aria-expanded="false">How it scores</button>
     <button class="btn small" data-more="sources" aria-expanded="false">Sources</button>
     
+    <a class="btn tipbtn" href="https://ko-fi.com/brawnybravo" target="_blank" rel="noopener">&#9749; Enjoying it? Tip the maker</a>
   </div>
   <div class="more-panel" data-more-panel="latest" hidden>
     <div><h2>Latest news</h2><p class="lede">What changed in the public information, newest first. Data as of <b id="dataDate"></b>. Official means Blizzard said it; Community means a fan site reports it from the beta client; Datamined means found in game files, which can change before release. Nothing here is tested beta play yet.</p></div>
@@ -285,7 +288,7 @@ details.char summary::-webkit-details-marker{display:none}
   </div>
   
 </section>
-<footer class="foot-note">Fan-made planning tool for World of Warcraft: Forever. Not affiliated with or endorsed by Blizzard Entertainment. Scores are guidance, not a tier list. <a class="tip" href="https://ko-fi.com/brawnybravo" target="_blank" rel="noopener">Enjoying it? Tip the maker &#9749;</a></footer>
+<footer class="foot-note">Fan-made planning tool for World of Warcraft: Forever. Not affiliated with or endorsed by Blizzard Entertainment. Scores are guidance, not a tier list.</footer>
 </div>
 
 <script>
