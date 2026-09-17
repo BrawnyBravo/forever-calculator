@@ -767,7 +767,7 @@ function plOpen(pathName,specName,userPick){
   ensurePlanner(()=>{
     const spec=plSpecKey(p.cls,specName||plDefaultSpec(p,state.I)||"");
     if(!state.pl||state.pl.path!==pathName||state.pl.spec!==spec){
-      const phase=state.pl&&state.pl.phase||"l60"; state.pl={path:pathName,spec,phase,t:null,gear:{},ench:{},raid:false,pvp:false,buffs:true,cons:false,deb:true}; state.pl.t=plPreset(p.cls,spec);
+      const phase=state.pl&&state.pl.phase||"l60"; state.pl={path:pathName,spec,phase,t:null,gear:{},ench:{},lock:{},enchLock:{},raid:false,pvp:false,buffs:true,cons:false,deb:true}; state.pl.t=plPreset(p.cls,spec);
       state.pl.goal=state.I.goal; plAutofill(); state.plPick=null; state.plTree=undefined;
     } else if(state.pl.goal===undefined) state.pl.goal=state.I.goal; // a build from a link keeps its gear
     else if(state.pl.goal!==state.I.goal){ const was=plSurvivalWeight(); state.pl.goal=state.I.goal; if(plSurvivalWeight()!==was){plAutofill(); state.plPick=null} } // PvP and PvE gear differ: suggest again
@@ -800,8 +800,8 @@ function plCanAdd(cls,ti,i){
 }
 function plChange(cls,ti,i,d){
   const pts=state.pl.t[ti];
-  if(d>0){ if(!plCanAdd(cls,ti,i))return } else { if(!pts[i])return; pts[i]--; if(!plTreeOk(cls,ti)){pts[i]++;toast("Other talents depend on that point");return} writeHash();renderPlanner();return }
-  pts[i]++; writeHash(); renderPlanner();
+  if(d>0){ if(!plCanAdd(cls,ti,i))return } else { if(!pts[i])return; pts[i]--; if(!plTreeOk(cls,ti)){pts[i]++;toast("Other talents depend on that point");return} writeHash();renderPlanner();plAutoGear();return }
+  pts[i]++; writeHash(); renderPlanner(); plAutoGear();
 }
 /* --- gear --- */
 const plItem=id=>PL.items.find(x=>x.id===id);
@@ -853,15 +853,25 @@ function plObjective(p,spec){ // the value a gear set is chosen by, or null when
   const w=plSurvivalWeight(); return w?Math.log(Math.max(1e-6,e.total))+w*Math.log(Math.max(1,plEhp(st.S))):e.total;
 }
 const plObjectiveEps=()=>plSurvivalWeight()?1e-4:0.05; // a swap has to gain more than 0.05 per second, or 0.01% on the PvP scale
+/* Live gear (17 Sep 2026, owner: "have it auto update instead of having the suggest starter gear button"). Gear is suggested again whenever
+   something that changes the best set changes: path, spec, phase, talents, Legacy perks, buffs. A slot the visitor chose by hand (an item, a
+   Choices icon, Clear, or an enchant) is kept (state.pl.lock: item id, or 0 for empty; state.pl.enchLock) until "Back to suggested gear". */
+const plLocked=n=>!!state.pl.lock&&n in state.pl.lock;
+let plAutoTimer=null;
+function plAutoGear(){ // the click re-renders at once; the gear follows a moment later, so a run of talent clicks stays quick
+  clearTimeout(plAutoTimer); plAutoTimer=setTimeout(()=>{plAutoTimer=null; if(!state.pl||!PL)return; plAutofill(); writeHash(); renderPlanner()},250);
+}
 function plAutofill(){
   const p=DATA.paths.find(x=>x.name===state.pl.path), spec=state.pl.spec, g={};
+  const lock=state.pl.lock||{}; for(const n in lock)if(lock[n])g[n]=lock[n];
   const room=slotName=>plHitCap(PL.specs[spec])-plHitOther(g,{},slotName,p,PL.specs[spec]);
   const best=(key,skip=[],slotName)=>{const hr=room(slotName); return plCandidates(key,p,spec).filter(it=>!skip.includes(it.id)).sort((a,b)=>plScore(b,key,spec,hr)-plScore(a,key,spec,hr))[0]};
   for(const [name,key] of PL_SLOTS){
-    if(typeof key!=="number")continue;
+    if(typeof key!=="number"||name in lock)continue;
     const prev=Object.entries(g).filter(([n])=>PL_SLOTS.find(s=>s[0]===n)[1]===key).map(([,id])=>id);
     const b=best(key,prev,name); if(b)g[name]=b.id;
   }
+  if(!("Main hand" in lock)&&!("Off hand" in lock)){
   const hrW=room("Main hand"); const mhAll=plCandidates("mh",p,spec).sort((a,b)=>plScore(b,"mh",spec,hrW)-plScore(a,"mh",spec,hrW));
   const two=mhAll.find(x=>x.h===4), one=mhAll.find(x=>x.h!==4), oh=best("oh",one?[one.id]:[],"Off hand"); // the off hand never repeats the main-hand item (16 Sep 2026: unique daggers were picked twice)
   const s2=two?plScore(two,"mh",spec,hrW):-1, s1=(one?plScore(one,"mh",spec,hrW):-1)+(oh?plScore(oh,"oh",spec,Math.max(0,hrW-(one&&one.s[18]||0))):0);
@@ -873,7 +883,10 @@ function plAutofill(){
   const d2=two?trial(two.id,null):null, d1=one?trial(one.id,oh&&oh.id):null;
   const useTwo=two&&(d2!=null&&d1!=null&&d2!==d1?d2>d1:s2>=s1);
   if(useTwo){g["Main hand"]=two.id}else{if(one)g["Main hand"]=one.id;if(oh)g["Off hand"]=oh.id}
-  const r=best("rng",[],"Ranged"); if(r)g["Ranged"]=r.id;
+  } else if(!("Main hand" in lock)){ // off hand chosen by hand: the best one-hander beside it (a two-hander only if the off hand was cleared)
+    const hrW=room("Main hand"), list=plCandidates("mh",p,spec).filter(x=>x.id!==g["Off hand"]&&(!g["Off hand"]||x.h!==4)).sort((a,b)=>plScore(b,"mh",spec,hrW)-plScore(a,"mh",spec,hrW)); if(list[0])g["Main hand"]=list[0].id;
+  } else if(!("Off hand" in lock)){ const mh=plItem(g["Main hand"]); if(!mh||mh.h!==4){const oh=best("oh",g["Main hand"]?[g["Main hand"]]:[],"Off hand"); if(oh)g["Off hand"]=oh.id} }
+  if(!("Ranged" in lock)){const r=best("rng",[],"Ranged"); if(r)g["Ranged"]=r.id}
   state.pl.gear=g; plAutofillEnch();
   plRefineByEstimate(p,spec);
 }
@@ -895,7 +908,7 @@ function plRefineByEstimate(p,spec){
   const topBy=(key,list,slotName,n,perType)=>{const save=state.pl.gear; state.pl.gear=g; const hr=plHitRoom(slotName,p,spec); state.pl.gear=save;
     const sorted=list.slice().sort((a,b)=>plScore(b,key,spec,hr)-plScore(a,key,spec,hr)); if(!perType)return sorted.slice(0,n);
     const by={}; for(const it of sorted){const t=it.h===4?"2h"+it.w:it.w; (by[t]=by[t]||[]).length<n&&by[t].push(it)} return Object.values(by).flat()};
-  const weapons=()=>{
+  const weapons=()=>{ if(plLocked("Main hand")||plLocked("Off hand"))return; // a hand-picked weapon stays, so the pair is not re-priced
     const mhAll=plCandidates("mh",p,spec), ohAll=plCandidates("oh",p,spec);
     const mhs=topBy("mh",mhAll,"Main hand",3,true), ohs=topBy("oh",ohAll,"Off hand",3,true);
     let best=cur, pick=null;
@@ -908,7 +921,7 @@ function plRefineByEstimate(p,spec){
   };
   const others=()=>{
     for(const [name,key] of PL_SLOTS){
-      if(name==="Main hand"||name==="Off hand")continue;
+      if(name==="Main hand"||name==="Off hand"||plLocked(name))continue;
       const other=Object.entries(g).filter(([n])=>n!==name&&PL_SLOTS.find(x=>x[0]===n)[1]===key).map(([,id])=>id);
       const list=(key==="rng"?plCandidates("rng",p,spec):typeof key==="number"?plCandidates(key,p,spec):[]).filter(it=>!other.includes(it.id));
       const tough=plSurvivalWeight()?list.slice().sort((a,b)=>plToughness(b)-plToughness(a)).slice(0,4):[]; // PvP: the stat weights ignore stamina and armor, so the four toughest items join the field
@@ -954,8 +967,10 @@ function plEnchScore(e,spec,slotName){const sp=PL.specs[spec]; let s=0; for(cons
   return s}
 function plBestEnch(slotName,p,spec){const it=plItem(state.pl.gear[slotName]); const list=plEnchCandidates(slotName,it,p).sort((a,b)=>plEnchScore(b,spec,slotName)-plEnchScore(a,spec,slotName)); return list[0]&&plEnchScore(list[0],spec,slotName)>0?list[0].id:null}
 function plAutofillEnch(){
-  const p=DATA.paths.find(x=>x.name===state.pl.path), spec=state.pl.spec; state.pl.ench={};
-  for(const [name] of PL_SLOTS){const b=plBestEnch(name,p,spec); if(b)state.pl.ench[name]=b}
+  const p=DATA.paths.find(x=>x.name===state.pl.path), spec=state.pl.spec, el=state.pl.enchLock||{}; state.pl.ench={};
+  for(const [name] of PL_SLOTS){
+    if(name in el&&state.pl.gear[name]&&(!el[name]||plEnchCandidates(name,plItem(state.pl.gear[name]),p).some(e=>e.id===el[name]))){if(el[name])state.pl.ench[name]=el[name]; continue} // an enchant picked by hand stays while it still fits
+    const b=plBestEnch(name,p,spec); if(b)state.pl.ench[name]=b}
 }
 /* --- 2nd and 3rd best choice per slot (15 Sep 2026: the best item is often too rare to aim for, Lionheart Helm being the example) --- */
 function plAlternates(slotName,key,p,spec,n=3){
@@ -1087,7 +1102,7 @@ function renderPlanner(){
     <div><div class="label">Planning</div><h2 style="margin:0;color:${TEXT_COLOR[p.cls]}">${esc(displayName(p))}</h2><div class="muted" style="font-size:14px"><span class="fac-${esc(p.faction)}">${esc(p.faction)}</span> · ${esc(p.roles)} · fit <b class="num" style="color:${tierColor(fitScore(p,state.I))}">${fitScore(p,state.I)}</b></div></div>
     <div><div class="label">Phase</div><div class="chips">${Object.entries(PL.phases).map(([k,ph])=>`<button class="chip" data-phase="${k}" aria-pressed="${k===state.pl.phase}" title="${esc(ph.level<60?`Level ${ph.level}: ${ph.pts} talent points, items up to item level ${ph.ilvl}, enchants up to profession skill ${ph.skill}`:ph.raid?"Level 60 with the raid tier (Classic Molten Core and Onyxia items stand in for the Forever raids)":"Level 60, dungeon, quest, crafted and world items")}">${esc(ph.label)}</button>`).join("")}</div></div>
     <div><div class="label">Spec</div><div class="chips">${specs.map(k=>`<button class="chip" data-spec="${esc(k)}" aria-pressed="${k===spec}">${esc(k.replace(/ \(.*\)$/,""))}</button>`).join("")}</div></div>
-    <div class="pl-actions"><button class="btn small" id="plPreset" ${sp.talents?"":"disabled"}>Load suggested talents</button><button class="btn small" id="plClearT">Clear talents</button><button class="btn small" id="plAuto">Suggest starter gear</button><span class="muted" style="font-size:13px">${plPhase().raid?"Molten Core and Onyxia loot included":"no raids open yet, so no raid loot"}; only gear out by this phase</span>${(plPhase().maxPhase||1)>=2?`<label><input type="checkbox" id="plPvp" ${state.pl.pvp?"checked":""}> include PvP rank rewards</label>`:`<span class="muted" style="font-size:13px">PvP rank rewards arrive with the honor system (Classic phase 2)</span>`}<button class="btn small" id="plLink">Copy link to this build</button></div>
+    <div class="pl-actions"><button class="btn small" id="plPreset" ${sp.talents?"":"disabled"}>Load suggested talents</button><button class="btn small" id="plClearT">Clear talents</button>${(nHand=>nHand?`<button class="btn small" id="plAuto" title="Gear updates by itself as the build changes; slots picked by hand stay until you press this">Back to suggested gear (${nHand} picked by hand)</button>`:`<span class="muted" style="font-size:13px">Gear updates as you change the build.</span>`)(Object.keys({...state.pl.lock,...state.pl.enchLock}).length)}<span class="muted" style="font-size:13px">${plPhase().raid?"Molten Core and Onyxia loot included":"no raids open yet, so no raid loot"}; only gear out by this phase</span>${(plPhase().maxPhase||1)>=2?`<label><input type="checkbox" id="plPvp" ${state.pl.pvp?"checked":""}> include PvP rank rewards</label>`:`<span class="muted" style="font-size:13px">PvP rank rewards arrive with the honor system (Classic phase 2)</span>`}<button class="btn small" id="plLink">Copy link to this build</button></div>
     <details class="pl-about"><summary>Where these suggestions come from, and what the marks mean</summary>
       <p>${esc(PL.credit)} ${sp.talents?(plChosenKey(sp)?`The suggested talents for level ${plLevel()} are the ${plMaxPts()} points that raise this page's damage estimate most on the Forever trees (chosen by the estimate itself with starter gear on a Horde character, not copied from a Classic guide), so a talent the estimate does not model yet is not picked.`:"The suggested talents are this page's own first build on the Forever trees, written from the talent text before anyone has played it; no guide has published Forever builds yet."):"No suggested build for this spec yet; place the points yourself."}</p>
       <p>Starter gear is the best set this page's own damage or healing estimate finds for this race, talents and phase${plSurvivalWeight()?` (for ${esc(state.pl.goal)}, staying alive counts too: 1% more effective health, about ${plEhp(plStats(DATA.paths.find(x=>x.name===state.pl.path)).S).toFixed(0)} now from health, armor, dodge, parry and resistances, is worth ${plSurvivalWeight()}% more output)`:""} (stat weights narrow the choices; racials such as an Orc's axe bonus count), from Classic ${plPhase().raid?"dungeon, quest, crafted, vendor, world and raid-tier items":`dungeon, quest, crafted, vendor and world items up to item level ${plPhase().ilvl}${state.pl.raid?", plus raid-tier items":""}`}${state.pl.pvp?", plus PvP rank rewards":""}, with hit valued only up to its cap and weapon damage only for specs that swing. Forever's new dungeons and reworked loot are not in any database yet. Hover a talent for its text, and an item for its Wowhead Forever tooltip. Click a choice icon to use that item; the item name opens Wowhead's Forever database, which will refresh from the beta and launch clients.</p>
@@ -1117,29 +1132,29 @@ function renderPlanner(){
         return `<div class="slot"><img src="${it?icon(it.ic,"small"):"data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="}" alt="" width="28" height="28"><div><div class="label">${esc(name)}</div>${it?`<a href="https://www.wowhead.com/${plWhDom(it)}/item=${it.id}" data-wowhead="item=${it.id}&domain=${plWhDom(it)}" target="_blank" rel="noopener" style="color:${PL_QCOLOR[it.q]||"#fff"};font-weight:700">${esc(it.n)}</a> <span class="muted">ilvl ${it.il}</span><div class="muted" style="font-size:13px">${esc(plStatSrcLine(it))}</div>${(alts=>alts.length>1?`<div class="alts" aria-label="Best, 2nd and 3rd choice for ${esc(name)}"><span class="label">Choices</span>${alts.map(a=>{const rk=a.rank===1?"Best":a.rank===2?"2nd":"3rd"; return `<a class="alt${a.chosen?" chosen":""}" href="https://www.wowhead.com/${plWhDom(a.it)}/item=${a.it.id}" data-wowhead="item=${a.it.id}&domain=${plWhDom(a.it)}" target="_blank" rel="noopener" style="border-color:${a.chosen?"var(--gold)":PL_QCOLOR[a.it.q]||"#777"}" ${a.chosen?"":`data-use="${a.it.id}" data-slot="${esc(name)}"`} aria-label="${rk}: ${esc(a.it.n)}, ${esc(plSrcShort(a.it))}${a.chosen?", chosen":", click to use it"}"><img src="${icon(a.it.ic,"small")}" alt="" width="30" height="30"><b class="altrank">${a.rank}</b></a>`}).join("")}</div>`:"")(plAlternates(name,key,p,spec))}${(list=>list.length?`<div class="muted" style="font-size:13px">Enchant: <select data-ench="${esc(name)}" aria-label="Enchant for ${esc(name)}"><option value="">none</option>${list.sort((a,b)=>plEnchScore(b,spec,name)-plEnchScore(a,spec,name)).map(e=>`<option value="${e.id}" ${state.pl.ench[name]===e.id?"selected":""}>${esc(e.n.replace(/^Enchant \w+( Weapon)? - /,""))} (${esc(plEnchLine(e))})</option>`).join("")}</select></div>`:"")(plEnchCandidates(name,it,p))}`:`<span class="muted">${name==="Off hand"&&(id2=>{const m=id2&&plItem(id2);return m&&m.h===4})(state.pl.gear["Main hand"])?"Two-handed weapon in use":"Empty"}</span>`}</div><div class="chips"><button class="btn small" data-pick="${esc(name)}">${open?"Close":"Change"}</button>${it?`<button class="btn small" data-clear="${esc(name)}">Clear</button>`:""}</div></div>
         ${open?plPickerHTML(name,key,p,spec):""}`}).join("")}</div>
   </div>`;
-  el.querySelectorAll("[data-spec]").forEach(b=>b.onclick=()=>{const k=b.dataset.spec; state.pl.spec=k; state.pl.t=plPreset(p.cls,k); state.plTree=undefined; plAutofill(); writeHash(); renderPlanner()});
+  el.querySelectorAll("[data-spec]").forEach(b=>b.onclick=()=>{const k=b.dataset.spec; state.pl.spec=k; state.pl.t=plPreset(p.cls,k); state.plTree=undefined; state.pl.lock={}; state.pl.enchLock={}; plAutofill(); /* a new spec or phase is a new item pool: hand picks start over (17 Sep 2026) */ writeHash(); renderPlanner()});
   el.querySelectorAll("[data-fold]").forEach(b=>b.onclick=()=>{const k=b.dataset.fold; state.plFold[k]=!state.plFold[k]; renderPlanner(); if(!state.plFold[k]){const sec=$("#plSec-"+k); if(sec)sec.scrollIntoView({block:"nearest"})}});
   el.querySelectorAll("[data-tree]").forEach(b=>b.onclick=()=>{state.plTree=+b.dataset.tree; renderPlanner()});
-  el.querySelectorAll("[data-phase]").forEach(b=>b.onclick=()=>{const keep=PL.phases[b.dataset.phase].pts===plMaxPts(); state.pl.phase=b.dataset.phase; if(!keep)state.pl.t=plPreset(p.cls,state.pl.spec); state.plPick=null; plAutofill(); writeHash(); renderPlanner()}); // same point cap (Launch and Phase 1): the placed talents stay; gear is suggested again for the new pool
-  el.querySelectorAll("[data-ench]").forEach(s=>s.onchange=()=>{const n=s.dataset.ench; if(s.value)state.pl.ench[n]=+s.value; else delete state.pl.ench[n]; writeHash(); renderPlanner()});
-  $("#plPreset").onclick=()=>{state.pl.t=plPreset(p.cls,spec);writeHash();renderPlanner()};
-  $("#plClearT").onclick=()=>{state.pl.t=state.pl.t.map(tl=>tl.map(()=>0));writeHash();renderPlanner()};
-  $("#plAuto").onclick=()=>{plAutofill();writeHash();renderPlanner()};
+  el.querySelectorAll("[data-phase]").forEach(b=>b.onclick=()=>{const keep=PL.phases[b.dataset.phase].pts===plMaxPts(); state.pl.phase=b.dataset.phase; if(!keep)state.pl.t=plPreset(p.cls,state.pl.spec); state.plPick=null; state.pl.lock={}; state.pl.enchLock={}; plAutofill(); writeHash(); renderPlanner()}); // same point cap (Launch and Phase 1): the placed talents stay; gear is suggested again for the new pool
+  el.querySelectorAll("[data-ench]").forEach(s=>s.onchange=()=>{const n=s.dataset.ench; if(s.value)state.pl.ench[n]=+s.value; else delete state.pl.ench[n]; (state.pl.enchLock=state.pl.enchLock||{})[n]=+s.value||0; writeHash(); renderPlanner(); plAutoGear()});
+  $("#plPreset").onclick=()=>{state.pl.t=plPreset(p.cls,spec);writeHash();renderPlanner();plAutoGear()};
+  $("#plClearT").onclick=()=>{state.pl.t=state.pl.t.map(tl=>tl.map(()=>0));writeHash();renderPlanner();plAutoGear()};
+  const au=$("#plAuto"); if(au)au.onclick=()=>{state.pl.lock={};state.pl.enchLock={};plAutofill();writeHash();renderPlanner()};
   const rb=$("#plRaid"); if(rb)rb.onchange=e=>{state.pl.raid=e.target.checked;plAutofill();writeHash();renderPlanner()}; // the pool changed, so the suggestion is made again (16 Sep 2026: ticking it used to change nothing until Suggest was pressed)
   const pb=$("#plPvp"); if(pb)pb.onchange=e=>{state.pl.pvp=e.target.checked;plAutofill();writeHash();renderPlanner()};
   $("#plLink").onclick=()=>copyText(location.href,"Link copied");
-  ["buffs","cons","deb"].forEach(k=>{const c=$("#plOpt-"+k); if(c)c.onchange=e=>{state.pl[k]=e.target.checked;writeHash();renderPlanner()}});
-  el.querySelectorAll("[data-lg]").forEach(b=>b.onclick=()=>{const i=+b.dataset.lg;state.legacy[i]=Math.max(0,(state.legacy[i]||0)+ +b.dataset.d);writeHash();renderPlanner()});
-  const lr=$("#plLegacyReset"); if(lr)lr.onclick=()=>{state.legacy={};state.lgOff=true;state.lgGoal=null;writeHash();renderPlanner()}; // stays cleared (16 Sep 2026: the next click used to refill it)
-  const lm=$("#plLegacyMeta"); if(lm)lm.onclick=()=>{plLegacyMeta(state.I.goal);writeHash();renderPlanner()};
+  ["buffs","cons","deb"].forEach(k=>{const c=$("#plOpt-"+k); if(c)c.onchange=e=>{state.pl[k]=e.target.checked;writeHash();renderPlanner();plAutoGear()}});
+  el.querySelectorAll("[data-lg]").forEach(b=>b.onclick=()=>{const i=+b.dataset.lg;state.legacy[i]=Math.max(0,(state.legacy[i]||0)+ +b.dataset.d);writeHash();renderPlanner();plAutoGear()});
+  const lr=$("#plLegacyReset"); if(lr)lr.onclick=()=>{state.legacy={};state.lgOff=true;state.lgGoal=null;writeHash();renderPlanner();plAutoGear()}; // stays cleared (16 Sep 2026: the next click used to refill it)
+  const lm=$("#plLegacyMeta"); if(lm)lm.onclick=()=>{plLegacyMeta(state.I.goal);writeHash();renderPlanner();plAutoGear()};
   el.querySelectorAll(".tal").forEach(c=>{const ti=+c.dataset.ti,i=+c.dataset.i;
     c.onclick=e=>{const d=e.target.closest("[data-d]"); if(d){plChange(p.cls,ti,i,+d.dataset.d);return} plChange(p.cls,ti,i,1)};
     c.oncontextmenu=e=>{e.preventDefault();plChange(p.cls,ti,i,-1)};
     const show=()=>{const x=sorted[ti][i]; plShowTip(c,plTalentTipHTML(x,state.pl.t[ti][i],sorted[ti],ftal[x.n]))}; c.onmouseenter=show; c.onfocus=show; c.onmouseleave=plHideTip; c.onblur=plHideTip;
     c.onkeydown=e=>{if(e.target!==c)return; if(e.key==="Enter"||e.key===" "||e.key==="+"){e.preventDefault();plChange(p.cls,ti,i,1)} else if(e.key==="Backspace"||e.key==="Delete"||e.key==="-"){e.preventDefault();plChange(p.cls,ti,i,-1)}}});
   el.querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>{state.plPick=state.plPick===b.dataset.pick?null:b.dataset.pick;state.plQ="";renderPlanner();if(state.plPick)$("#plQ")?.focus()});
-  el.querySelectorAll("[data-clear]").forEach(b=>b.onclick=()=>{delete state.pl.gear[b.dataset.clear];delete state.pl.ench[b.dataset.clear];writeHash();renderPlanner()});
-  const choose=n=>{state.pl.gear[state.plPick]=+n; const b=plBestEnch(state.plPick,p,spec); if(b)state.pl.ench[state.plPick]=b; else delete state.pl.ench[state.plPick]; plOneWeaponSet(); state.plPick=null;writeHash();renderPlanner()};
+  el.querySelectorAll("[data-clear]").forEach(b=>b.onclick=()=>{const n=b.dataset.clear; delete state.pl.gear[n];delete state.pl.ench[n]; (state.pl.lock=state.pl.lock||{})[n]=0; writeHash();renderPlanner();plAutoGear()});
+  const choose=n=>{state.pl.gear[state.plPick]=+n; (state.pl.lock=state.pl.lock||{})[state.plPick]=+n; const b=plBestEnch(state.plPick,p,spec); if(b)state.pl.ench[state.plPick]=b; else delete state.pl.ench[state.plPick]; plOneWeaponSet(); for(const w of ["Main hand","Off hand"])if(state.pl.lock[w]&&!state.pl.gear[w])state.pl.lock[w]=0; state.plPick=null;writeHash();renderPlanner();plAutoGear()};
   el.querySelectorAll("[data-choose]").forEach(b=>b.onclick=()=>choose(b.dataset.choose));
   el.querySelectorAll(".alts .alt").forEach(b=>b.onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.altKey)return; e.preventDefault(); if(!b.dataset.use)return; // a plain click never leaves the page: the chosen icon does nothing, the others switch the item; the item name opens Wowhead (owner ask, 16 Sep 2026)
     // Wowhead's tooltip script positions its card on the hovered icon after a fetch; the icon is replaced by the re-render below, so tell it the hover ended first (its script threw on the detached element, 16 Sep)
@@ -1252,6 +1267,7 @@ function plRestore(){
   const ids=(state.pl.gearStr||"").split(","); state.pl.gear={}; PL_SLOTS.forEach(([n],i)=>{if(ids[i]&&plItem(+ids[i]))state.pl.gear[n]=+ids[i]});
   const eids=(state.pl.enchStr||"").split(","); state.pl.ench={}; PL_SLOTS.forEach(([n],i)=>{if(eids[i]&&state.pl.gear[n]&&plEnchCandidates(n,plItem(state.pl.gear[n]),p).some(e=>e.id===+eids[i]))state.pl.ench[n]=+eids[i]}); delete state.pl.enchStr;
   state.plPick=null; plOneWeaponSet();
+  state.pl.lock={}; for(const [n] of PL_SLOTS)state.pl.lock[n]=state.pl.gear[n]||0; state.pl.enchLock={...state.pl.ench}; // a shared build keeps the sender's gear as talents change; "Back to suggested gear" lets it follow again (17 Sep 2026)
   state.pinned=state.pl.path; // the linked build stays until the visitor picks another row (16 Sep 2026: the first choice click used to replace it)
   if(!PL.phases[state.pl.phase])state.pl.phase="l60";
   const o=state.pl.opt||""; state.pl.buffs=!/b0/.test(o); state.pl.cons=/c1/.test(o); state.pl.deb=!/d0/.test(o);
