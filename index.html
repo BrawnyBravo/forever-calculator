@@ -40,24 +40,24 @@ a{color:var(--gold-soft)} a:hover{color:var(--gold)}
 button,select,input,textarea{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .wrap{max-width:1440px;margin-inline:auto}
-header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:var(--s3) var(--s5);padding-block:16px 10px;border-bottom:1px solid var(--frame);margin-bottom:var(--s3)}
+header.top{display:grid;gap:10px;padding-block:16px 12px;border-bottom:1px solid var(--frame);margin-bottom:var(--s3)}
 h1{font-family:var(--display);font-weight:400;font-size:clamp(24px,3vw,34px);line-height:1.05;margin:0;color:var(--gold);letter-spacing:.01em;text-wrap:balance}
 h1 small{display:block;font-family:var(--body);font-size:15px;color:var(--ink-2);letter-spacing:0;margin-top:6px}
 .stamp{font-family:var(--mono);font-size:12px;color:var(--ink-3);text-align:right;line-height:1.6}
 .stamp b{color:var(--ink-2);font-weight:600}
 /* countdowns in the header (16 Sep 2026): one card per date, the number ticks, the rest is fixed text */
-.cd-wrap{display:grid;gap:4px;justify-items:end}
-.cdowns{display:flex;gap:var(--s2)}
-.cd{padding:6px 10px;min-width:0;width:200px;line-height:1.3}
-.cd-t{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--gold-soft);font-weight:600}
-.cd-n{display:block;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:18px;color:var(--ink);white-space:nowrap}
-.cd-w,.cd-l{display:block;font-size:12px;color:var(--ink-2)} .cd-l{color:var(--ink-3)}
-.cd-done{display:block;font-size:13px;color:var(--ink);margin-top:2px}
-.cd a{font-size:12px}
-.cd-news{font-size:13px;background:none;border:0;padding:0;color:var(--gold-soft);cursor:pointer;text-decoration:underline}
-.cd-news:hover{color:var(--gold)}
+.cd-wrap{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2) var(--s3)} /* 18 Sep 2026: one slim strip under the title at every width (was two 200 px cards floated right, crowded at 800-1100 px) */
+.cdowns{display:flex;flex-wrap:wrap;gap:var(--s2);flex:1 1 560px;min-width:0}
+.cd{padding:5px 12px;min-width:0;flex:1 1 280px;line-height:1.35;display:flex;flex-wrap:wrap;align-items:baseline;gap:0 10px}
+.cd-t{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--gold-soft);font-weight:600}
+.cd-n{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:17px;color:var(--ink);white-space:nowrap}
+.cd-w,.cd-l{font-size:13px;color:var(--ink-2)} .cd-l{color:var(--ink-3)}
+.cd-done{font-size:13px;color:var(--ink)}
+.cd a{font-size:13px}
+.cd-news{font-size:14px;background:none;border:1px solid transparent;border-radius:3px;padding:4px 8px;min-height:32px;color:var(--gold-soft);cursor:pointer;text-decoration:underline;flex:none}
+.cd-news:hover{color:var(--gold);border-color:var(--frame-hi)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-@media (max-width:700px){.cd-wrap{justify-items:stretch;width:100%}.cdowns{width:100%}.cd{flex:1 1 0;width:auto}.cd-n{font-size:15px}}
+@media (max-width:700px){.cd{flex-basis:100%;padding:5px 10px}.cd-n{font-size:16px}.cd-t{font-size:13px}.cd-news{min-height:36px;padding:6px 8px}}
 .sev.dm{color:var(--ink-2)} .news-links{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;font-size:14px}
 h2{font-family:var(--display);font-weight:400;font-size:22px;color:var(--gold);margin:0;text-wrap:balance}
 h3{font-family:var(--display);font-weight:400;font-size:17px;margin:0;color:var(--ink)}
@@ -73,13 +73,15 @@ h3{font-family:var(--display);font-weight:400;font-size:17px;margin:0;color:var(
 .side{grid-area:side;display:grid;gap:var(--s3);position:sticky;top:var(--s2);max-height:calc(100vh - 16px);overflow:auto;scrollbar-width:thin;padding-right:2px}
 @media (max-width:900px){.main{grid-template-columns:1fr;grid-template-rows:auto;grid-template-areas:"choices" "side" "planner"}.side{position:static;max-height:none;overflow:visible}}
 .choices{padding:var(--s2) var(--s4);display:grid;grid-template-columns:max-content minmax(0,1fr) max-content minmax(0,1fr);gap:7px var(--s3);align-items:center}
-.ch-head{display:flex;align-items:center;gap:var(--s2);min-height:22px;grid-column:3/-1;justify-self:end} .ch-head .btn{min-height:22px;padding:0 6px;font-size:12.5px}
+.ch-head{display:flex;align-items:center;gap:var(--s2);min-height:22px;grid-column:3/-1;justify-self:end} .ch-head .btn{min-height:28px;padding:2px 12px;font-size:13px;color:var(--ink-2);border-color:var(--frame-hi)} .ch-head .btn:hover{color:var(--gold);border-color:var(--gold-soft)}
 .choice{display:contents} .choice .label{text-align:right;white-space:nowrap} .choice[data-k="cls"] .chips,.choice[data-k="race"] .chips{grid-column:2/-1}
 @media (max-width:900px){.choices{grid-template-columns:1fr;gap:6px}.choice{display:grid;gap:2px}.choice .label{text-align:left}.choice[data-k="cls"] .chips,.choice[data-k="race"] .chips{grid-column:auto}.ch-head{grid-column:auto}}
 .chips{display:flex;flex-wrap:wrap;gap:3px}
 .chip{border:1px solid var(--frame);background:#0c1120;border-radius:3px;padding:2px 8px;font-size:13px;cursor:pointer;color:var(--ink-2);line-height:1.4;min-height:24px}
 .chip:hover{border-color:var(--frame-hi);color:var(--ink)}
 .chip[aria-pressed="true"]{border-color:var(--gold-soft);color:var(--gold);background:#231d0a}
+#choices .chip[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold);color:#14100a;font-weight:600;padding-inline:6px 8px} #choices .chip[aria-pressed="true"]::before{content:"\2713\00a0"} /* 18 Sep 2026: a chosen filter is filled and ticked, so it never reads like a jump or show/hide button */
+#choices .label{font-size:12px}
 .choices .foot{display:flex;flex-wrap:wrap;gap:var(--s2);border-top:1px solid var(--frame);padding-top:var(--s3)}
 .btn{border:1px solid var(--frame-hi);background:#151c2e;border-radius:3px;padding:6px 12px;cursor:pointer;font-size:14px;min-height:30px}
 .btn:hover{border-color:var(--gold-soft);color:var(--gold)}
@@ -94,23 +96,25 @@ h3{font-family:var(--display);font-weight:400;font-size:17px;margin:0;color:var(
 .row:hover{border-color:var(--frame-hi)}
 .row.sel{border-color:var(--gold-soft);background:#1a1a12}
 .row.sel .pname::after{content:" ◂";color:var(--gold-soft)}
-.rank{font-family:var(--mono);color:var(--ink-3);font-size:12px;text-align:right}
+.rank{font-family:var(--mono);color:var(--ink-3);font-size:13px;text-align:right}
 .pname{font-family:var(--display);font-size:15.5px;line-height:1.15;overflow-wrap:anywhere}
 .row.sub{grid-template-columns:minmax(0,1fr) 92px;margin-left:30px;min-height:40px;padding:5px 9px;background:#0b0f1b}
 .row.sub .pname{font-size:14px}
 .meta{display:flex;flex-wrap:wrap;gap:2px var(--s2);font-size:12px;color:var(--ink-2);line-height:1.35;align-items:center}
 .fac-Horde{color:var(--horde)} .fac-Alliance{color:var(--alliance)}
-.badge{font-size:10px;letter-spacing:.06em;text-transform:uppercase;border:1px solid currentColor;border-radius:2px;padding:0 4px;line-height:1.5}
+.badge{font-size:12px;letter-spacing:.04em;text-transform:uppercase;border:1px solid currentColor;border-radius:2px;padding:0 4px;line-height:1.5}
 .badge.new{color:var(--uncommon)} .badge.pack{color:var(--t-orange)}
-.rdps{font-family:var(--mono);font-size:11.5px;color:var(--gold-soft)}
-.fit{display:grid;grid-template-columns:1fr 38px;gap:6px;align-items:center}
+.rdps{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--gold-soft);white-space:nowrap} /* body face, not mono: the stat and why? fit one line in the side column (18 Sep 2026) */
+.fit{display:grid;grid-template-columns:1fr 38px;gap:6px;align-items:center} /* the bar runs from the bottom of the shown list to #1 (18 Sep 2026); the number is the real score */
 .bar{height:6px;background:#0a0f1c;border:1px solid var(--frame);border-radius:1px;overflow:hidden}
 .bar i{display:block;height:100%}
 .score{font-family:var(--mono);font-weight:600;font-size:14px;text-align:right;font-variant-numeric:tabular-nums}
-.why{font-size:12px;color:var(--ink-3);border:0;background:none;padding:2px 5px;min-height:24px;border-radius:3px;cursor:pointer;text-decoration:underline dotted}
-.races{font-size:12px;color:var(--gold-soft);border:0;background:none;padding:2px 5px;min-height:24px;border-radius:3px;cursor:pointer} .races:hover{color:var(--gold)}
+.why{font-size:12.5px;color:var(--ink-3);border:0;background:none;padding:2px 5px;min-height:24px;border-radius:3px;cursor:pointer;text-decoration:underline dotted}
+.races{font-size:12.5px;color:var(--gold-soft);border:0;background:none;padding:2px 5px;min-height:24px;border-radius:3px;cursor:pointer} .races:hover{color:var(--gold)}
 .list-legend{font-size:12px;color:var(--ink-3);margin-top:var(--s2);line-height:1.4}
-@media (max-width:700px),(pointer:coarse){.chip{min-height:30px;padding:3px 9px}.why,.races{min-height:32px;padding:6px 8px}}
+@media (max-width:700px),(pointer:coarse){.chip{min-height:30px;padding:3px 9px}.why,.races{min-height:32px;padding:6px 8px}.ch-head .btn,#toggleAll,.ph-more{min-height:36px}}
+.ph-more{display:none;width:100%;margin-top:var(--s2)}
+@media (max-width:700px){#choices .label,.cd-w,.cd-l,.cd a,.meta,.why,.races,.rank,.rdps,.badge,.list-legend,.results-head .lede,.ch-head .btn,#toggleAll{font-size:13px}.ph-more{display:block}.list:not(.ph-all) .ph-x{display:none}} /* 18 Sep 2026: a phone shows the top three rows until Show more, so the planner is on the second screen */
 .why:hover{color:var(--gold)}
 .detail{padding:var(--s3) var(--s4);margin:2px 0 var(--s2);display:grid;gap:var(--s3);font-size:14px}
 .breakdown{display:grid;gap:6px}
@@ -188,24 +192,24 @@ details.char summary::-webkit-details-marker{display:none}
 .tree{padding:10px}
 .tree h3{margin:0 0 8px}
 .tgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
-.tal{border:1px solid var(--frame);border-radius:4px;padding:5px 2px 4px;text-align:center;font-size:11px;line-height:1.15;cursor:pointer;background:#0f1424;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
+.tal{border:1px solid var(--frame);border-radius:4px;padding:5px 2px 4px;text-align:center;font-size:12px;line-height:1.15;cursor:pointer;background:#0f1424;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
 .tal img{width:38px;height:38px;border-radius:4px;display:block;border:1px solid #333}
 .tal .tn{min-height:2.3em;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.tal .tp{display:flex;align-items:center;justify-content:center;gap:3px;font-size:11px;margin-top:2px;max-width:100%;flex-wrap:wrap;row-gap:2px} .tal .tp .num{white-space:nowrap} .tal .tp button{width:22px;height:22px;line-height:1;padding:0;border:1px solid var(--frame-hi);background:#151c2e;border-radius:3px;cursor:pointer;flex:none} .tal .tp button:disabled{opacity:.3;cursor:default}
+.tal .tp{display:flex;align-items:center;justify-content:center;gap:3px;font-size:12px;margin-top:2px;max-width:100%;flex-wrap:wrap;row-gap:2px} .tal .tp .num{white-space:nowrap} .tal .tp button{width:24px;height:24px;line-height:1;padding:0;border:1px solid var(--frame-hi);background:#151c2e;border-radius:3px;cursor:pointer;flex:none} .tal .tp button:disabled{opacity:.3;cursor:default}
 @media (max-width:1366px){.tal .tp{gap:2px}.tal{padding:5px 1px 4px}} /* 16 Sep 2026: the − 5/5 + row overflowed its cell at 1366 px and on phones */
-@media (pointer:coarse){.tal .tp button{width:30px;height:30px}}
+@media (pointer:coarse){.tal .tp button{width:32px;height:32px}}
 .tal:hover:not(.locked){border-color:var(--frame-hi)}
 .tal.maxed{border-color:var(--gold-soft)} .tal.maxed img{border-color:var(--gold)}
 .tal.part{border-color:#2f8cff}
 .tal.locked{opacity:.6} .tal.locked img{filter:grayscale(.6)}
 .tal b.fx.fx-new,b.fx.fx-new{background:#1f6fd6;color:#fff} .tal.is-new{border-style:dashed} .tal.is-new.maxed,.tal.is-new.part{border-style:solid}
 .tal b.fx.fx-moved,b.fx.fx-moved{background:#8a2be2;color:#fff} .tal.is-moved{border-style:dotted;border-width:2px} .tal.is-moved.maxed,.tal.is-moved.part{border-style:solid}
-.tal .fx{position:absolute;top:2px;right:2px;font-family:var(--mono);font-size:10px;line-height:1;padding:2px 4px;border-radius:3px;background:var(--gold);color:#000;font-weight:700} b.fx{font-family:var(--mono);font-size:11px;padding:1px 4px;border-radius:3px;background:var(--gold);color:#000}
+.tal .fx{position:absolute;top:2px;right:2px;font-family:var(--mono);font-size:12px;line-height:1;padding:2px 4px;border-radius:3px;background:var(--gold);color:#000;font-weight:700} b.fx{font-family:var(--mono);font-size:12px;padding:1px 4px;border-radius:3px;background:var(--gold);color:#000}
 .pl-forever,.pl-legacytf{padding:10px 14px} .pl-forever ul,.pl-legacytf ul{margin:2px 0 10px;padding-left:18px;font-size:14px} .pl-forever li,.pl-legacytf li{margin:3px 0} .pl-forever .label,.pl-legacytf .label{margin-top:6px}
-.src{font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:1px 5px;border-radius:3px;border:1px solid var(--frame-hi);color:var(--ink-2);vertical-align:1px} .src-blizzard{color:var(--uncommon);border-color:var(--uncommon)} .src-press{color:var(--t-blue);border-color:var(--t-blue)} .src-fan{color:var(--t-orange);border-color:var(--t-orange)}
+.src{font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:1px 5px;border-radius:3px;border:1px solid var(--frame-hi);color:var(--ink-2);vertical-align:1px} .src-blizzard{color:var(--uncommon);border-color:var(--uncommon)} .src-press{color:var(--t-blue);border-color:var(--t-blue)} .src-fan{color:var(--t-orange);border-color:var(--t-orange)}
 .pl-side{display:grid;gap:var(--s3);align-content:start}
 .pl-stats,.pl-gear,.pl-dps,.pl-legacy{padding:10px 14px}
-.pl-dpsnum{font-size:30px;line-height:1.1;margin:2px 0 4px} .pl-dpsnum .num{color:var(--gold)}
+.pl-dpsnum{margin:2px 0 4px} .pl-dpsnum .num{color:var(--gold)}
 .pl-perk{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;padding:6px 0;border-top:1px solid var(--frame);font-size:14px}
 .stepper{display:flex;align-items:center;gap:6px}
 .stepper button{width:28px;height:28px;border:1px solid var(--frame-hi);background:#151c2e;border-radius:3px;cursor:pointer}
@@ -216,14 +220,14 @@ details.char summary::-webkit-details-marker{display:none}
 .slot .alts{margin-top:4px;display:flex;align-items:flex-start;gap:6px;flex-wrap:wrap} .slot .alts .label{margin-right:2px;line-height:34px}
 .slot .alts .alt{position:relative;display:inline-block;width:34px;height:34px;border:2px solid #777;border-radius:4px;background:#0f1424;line-height:0}
 .slot .alts .alt img{width:30px;height:30px;border-radius:2px;display:block} .slot .alts .alt.chosen{box-shadow:0 0 0 1px var(--gold);cursor:default} .slot .alts .alt:not(.chosen){cursor:pointer;opacity:.85} .slot .alts .alt:not(.chosen):hover{opacity:1}
-.slot .alts .altrank{position:absolute;right:-3px;bottom:-3px;font-family:var(--mono);font-size:10px;line-height:1;padding:1px 3px;background:#0b0f1a;border:1px solid var(--frame-hi);border-radius:2px;color:var(--ink-2)}
+.slot .alts .altrank{position:absolute;right:-3px;bottom:-3px;font-family:var(--mono);font-size:12px;line-height:1;padding:1px 3px;background:#0b0f1a;border:1px solid var(--frame-hi);border-radius:2px;color:var(--ink-2)}
 /* talent hover tooltip (16 Sep 2026) */
 .pltip{position:fixed;z-index:50;max-width:320px;padding:8px 10px;background:#0b0f1a;border:1px solid var(--frame-hi);border-radius:4px;box-shadow:0 8px 24px #000c;font-size:13px;line-height:1.35;color:var(--ink);pointer-events:none}
-.pltip h4{font-family:var(--display);font-weight:400;font-size:15px;color:var(--gold);margin:0} .pltip .rank{color:var(--ink-3);font-size:12px} .pltip p{margin:6px 0 0} .pltip .now{color:#fff8e1} .pltip .next{color:var(--ink-3)} .pltip .req{color:var(--horde)} .pltip .rep{color:var(--gold-soft)} .pltip .hint{color:var(--ink-3);font-size:11px;margin-top:8px}
-.pltip .fx{font-family:var(--mono);font-size:10px;padding:1px 4px;border-radius:3px;background:var(--gold);color:#000;vertical-align:2px} .pltip .fx-new{background:#1f6fd6;color:#fff}
+.pltip h4{font-family:var(--display);font-weight:400;font-size:15px;color:var(--gold);margin:0} .pltip .rank{color:var(--ink-3);font-size:12px} .pltip p{margin:6px 0 0} .pltip .now{color:#fff8e1} .pltip .next{color:var(--ink-3)} .pltip .req{color:var(--horde)} .pltip .rep{color:var(--gold-soft)} .pltip .hint{color:var(--ink-3);font-size:12px;margin-top:8px}
+.pltip .fx{font-family:var(--mono);font-size:12px;padding:1px 4px;border-radius:3px;background:var(--gold);color:#000;vertical-align:2px} .pltip .fx-new{background:#1f6fd6;color:#fff}
 /* touch and phone sizes for the small buttons; these sit after the base rules above so they win at equal specificity (16 Sep 2026) */
-@media (max-width:700px),(pointer:coarse){.tal .tp button{width:30px;height:30px}.stepper button{width:32px;height:32px}.slot .alts .alt{width:38px;height:38px}.slot .alts .alt img{width:34px;height:34px}.slot .alts .label{line-height:38px}}
-@media (max-width:420px){.tal .tp .num{flex-basis:100%;order:-1;line-height:1.1}} /* four talents across a phone: the count sits above the two 30 px buttons instead of between them */
+@media (max-width:700px),(pointer:coarse){.tal .tp button{width:32px;height:32px}.stepper button{width:32px;height:32px}.slot .alts .alt{width:38px;height:38px}.slot .alts .alt img{width:34px;height:34px}.slot .alts .label{line-height:38px}}
+/* 18 Sep 2026: the rank count moved onto the icon as a badge, so the old 420 px rule that stacked it above the buttons is gone */
 @media (max-width:700px){.pl-sumphase{display:none}.pl-summary{padding:4px 8px}.slot .alts .label{display:none}} /* the sticky summary and the gear rows keep to fewer lines on a phone (16 Sep 2026) */
 .pl-forever summary,.pl-legacytf summary{cursor:pointer} .pl-forever summary h3,.pl-legacytf summary h3{display:inline}
 .slot select{max-width:100%;width:100%;box-sizing:border-box;background:#0f1424;border:1px solid var(--frame-hi);color:inherit;border-radius:3px;padding:3px 4px;font-size:13px;margin-top:2px}
@@ -233,6 +237,40 @@ details.char summary::-webkit-details-marker{display:none}
 .pick{display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--frame)}
 .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--panel-2);border:1px solid var(--gold-soft);color:var(--gold);padding:8px 14px;border-radius:3px;font-size:14px;z-index:9}
 @media (prefers-reduced-motion:no-preference){.row,.chip,.btn{transition:border-color .12s,color .12s,background-color .12s}}
+/* planner UI 18 Sep */
+/* 18 Sep 2026 UI audit (planner part): 12px text floor (13px on a phone), 24px tap floor (32px on touch), rank badge on the talent icon,
+   stat tiles for the estimate, folded explainers, grouped gear with one visible action, section jumps styled as tabs not filter chips */
+#planner .label{font-size:12px}
+.tgrid{grid-template-columns:repeat(4,minmax(0,88px));justify-content:center}
+.tal .ti{position:relative;display:block;line-height:0;margin-bottom:5px}
+.tal .trk{position:absolute;right:-8px;bottom:-6px;font-size:12px;line-height:1;padding:1px 3px;background:#0b0f1a;border:1px solid var(--frame-hi);border-radius:3px;color:var(--ink-2);white-space:nowrap}
+.tal.maxed .trk{color:var(--gold);border-color:var(--gold-soft)} .tal.part .trk{color:#9cc8ff;border-color:#2f8cff}
+.tal .tp{margin-top:0;gap:6px}
+#planner label:has(>input[type=checkbox]){display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:0 6px 0 2px;cursor:pointer;border-radius:3px}
+#planner label:has(>input[type=checkbox]):hover{color:var(--ink)}
+#planner input[type=checkbox]{width:16px;height:16px;margin:0;flex:none;accent-color:var(--gold);cursor:pointer}
+#planner summary{min-height:24px;padding:3px 0;box-sizing:border-box}
+.slot select,.pl-prof select{min-height:28px}
+.pl-more{font-size:13px;color:var(--ink-3)} .pl-more summary{cursor:pointer;color:var(--ink-2)} .pl-more p{margin:4px 0;max-width:90ch}
+.pl-head>.pl-prof,.pl-head>.pl-about{flex-basis:100%}
+.pl-stats .pl-more{margin-top:8px}
+.pl-tiles{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 2px}
+.pl-tile{flex:1 1 140px;display:flex;flex-direction:column;gap:2px;padding:8px 12px;border:1px solid var(--frame);border-radius:4px;background:#0f1424}
+.pl-tilek{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:600}
+.pl-tile .num{font-size:30px;line-height:1.1} .pl-tileu{font-size:14px;color:var(--ink-2)}
+.pl-tilecap{margin:2px 0 4px;font-size:12px;color:var(--ink-3)}
+.pl-ggrp{font-family:var(--display);font-weight:400;font-size:14px;letter-spacing:.06em;color:var(--ink-2);margin:14px 0 0;padding-bottom:2px}
+.pl-gear h3+.pl-ggrp{margin-top:4px}
+.pl-pickhead{display:flex;gap:8px;align-items:flex-start} .pl-pickhead input{flex:1}
+@media (hover:hover) and (pointer:fine){.slot .pl-clear{opacity:0} .slot:hover .pl-clear,.slot:focus-within .pl-clear{opacity:1}}
+.pl-summary .pl-fold{gap:2px}
+.pl-summary .pl-fold .chip{background:transparent;border:0;border-bottom:2px solid transparent;border-radius:0;color:var(--ink-3);padding:2px 8px;font-family:inherit;font-size:14px}
+.pl-summary .pl-fold .chip:hover{color:var(--gold);background:transparent}
+.pl-summary .pl-fold .chip[aria-pressed="true"]{background:transparent;color:var(--ink);border-bottom-color:var(--gold-soft)}
+.pl-summary .pl-fold .chip:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+@media (max-width:700px),(pointer:coarse){#planner label:has(>input[type=checkbox]){min-height:36px}#planner input[type=checkbox]{width:20px;height:20px}#planner summary{min-height:32px;padding:6px 0}.slot select,.pl-prof select{min-height:36px}.slot .pl-clear{opacity:1}}
+@media (max-width:700px){#planner .label,.tal,.tal .trk,.tal .fx,#planner b.fx,.src,.slot .alts .altrank,.pl-tilek,.pl-tilecap,.pltip .hint{font-size:13px}}
+/* /planner UI 18 Sep */
 </style>
 
 <div class="wrap">
@@ -250,6 +288,7 @@ details.char summary::-webkit-details-marker{display:none}
         <button class="btn small quiet" id="toggleAll">Show all</button>
       </div>
       <div class="list" id="list" role="listbox" aria-label="Ranked paths"></div>
+      <button class="btn small ph-more" id="phMore" aria-expanded="false" aria-controls="list" hidden>Show more</button>
     </div>
     
   </aside>
@@ -481,7 +520,8 @@ const MORE_FROM_TAB={latest:"latest",races:"races",classes:"classes",checks:"che
 /* ---------- link-saved state ---------- */
 function readHash(){
   const h=new URLSearchParams(location.hash.slice(1));
-  for(const k in SHORT){const v=h.get(SHORT[k]);if(v&&OPTS[k].v.includes(v))state.I[k]=v}
+  const RETIRED={role:{"Caster DPS":"Ranged DPS"}}; // 18 Sep 2026: old links named the ranged role "Caster DPS"; dropping it reset the role, the linked class no longer fit, and a goal change replaced the hand-edited build
+  for(const k in SHORT){let v=h.get(SHORT[k]);if(v&&RETIRED[k]&&RETIRED[k][v])v=RETIRED[k][v];if(v&&OPTS[k].v.includes(v))state.I[k]=v}
   if(h.get("lg")==="0")state.lgOff=true; else if(h.get("lg"))h.get("lg").split("~").forEach(x=>{const [i,n]=x.split(".");if(DATA.legacy[+i])state.legacy[+i]=+n});
   // Old links: t= (tabs) and cmp= (compare) are gone. A guide or sources tab opens as its More panel; anything else lands on the main screen.
   if(h.get("t")&&MORE_FROM_TAB[h.get("t")]&&document.querySelector(`[data-more="${MORE_FROM_TAB[h.get("t")]}"]`))state.more=MORE_FROM_TAB[h.get("t")];
@@ -516,7 +556,7 @@ function renderChoices(){
   const el=$("#choices"); const focusId=document.activeElement&&el.contains(document.activeElement)?document.activeElement.id:"";
   // Every choice group stays visible at every width (owner decision, 15 Sep 2026 about 9:45 PM: the choices are never folded away).
   el.innerHTML=Object.entries(OPTS).map(([k,o])=>`<div class="choice" data-k="${k}"><div class="label" id="lab-${k}">${o.label}</div><div class="chips" role="group" aria-labelledby="lab-${k}">${o.v.map(v=>`<button class="chip" id="opt-${k}-${esc(v).replace(/\W/g,"")}" data-k="${k}" data-v="${esc(v)}" aria-pressed="${state.I[k]===v}">${esc(v)}</button>`).join("")}</div></div>`).join("")+
-    `<div class="ch-head"><button class="btn small quiet" id="resetChoices">Reset</button></div>`;
+    `<div class="ch-head"><button class="btn small" id="resetChoices">&#8634; Reset choices</button></div>`;
   if(focusId){const f=$("#"+focusId); if(f)f.focus({preventScroll:true})} // keyboard focus survives the re-render (16 Sep 2026)
   el.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{state.I[b.dataset.k]=b.dataset.v;state.open=null;writeHash();renderChoices();renderFind();syncPlanner()});
   $("#resetChoices").onclick=()=>{state.I={...DEFAULTS};state.open=null;state.pinned=null;state.expand={};writeHash();renderChoices();renderFind();syncPlanner()};
@@ -547,15 +587,17 @@ function detailHTML(p,I){
 const selectedPath=()=>state.pl&&state.pl.path;
 const LIST_TOP=10;
 const listed=I=>rankAll(DATA.paths,I).filter(s=>I.role==="Any"||new RegExp(I.role).test(s.p.roles));
-function rowHTML(s,i,I,extra){
-  const p=s.p,open=state.open===p.name,isSel=selectedPath()===p.name;
+let barLo=0,barHi=100; // the shown list's range, set by renderFind: the bar compares rows, the number is the score
+const barW=sc=>Math.max(4,Math.min(100,barHi>barLo?(sc-barLo)/(barHi-barLo)*100:100)).toFixed(1);
+function rowHTML(s,i,I,extra,cls){
+  const p=s.p,open=state.open===p.name,isSel=selectedPath()===p.name;cls=cls||"";
   return `
-    <div class="row${isSel?" sel":""}${i==null?" sub":""}" role="option" tabindex="0" aria-selected="${isSel}" data-name="${esc(p.name)}" title="Plan ${esc(displayName(p))}">
+    <div class="row${isSel?" sel":""}${i==null?" sub":""}${cls}" role="option" tabindex="0" aria-selected="${isSel}" data-name="${esc(p.name)}" title="Plan ${esc(displayName(p))}">
       ${i==null?"":`<div class="rank">${i+1}</div>`}
       <div><div class="pname" style="color:${TEXT_COLOR[p.cls]}">${esc(displayName(p))}</div>
-        <div class="meta"><span class="fac-${p.faction}">${p.faction}</span>${(sp=>sp?`<span><b>${esc(sp)}</b></span>`:"")(specFor(p,I))}${(rd=>rd&&/^(PvE|Balanced)$/.test(I.goal)?`<span class="rdps" title="Planner ${esc(rd.what.replace("raid ",""))} for ${esc(rd.spec)} in starter gear at 60 with raid buffs and consumables; provisional until beta">${rd.dps} raid ${rd.unit}${rd.aoe?` · ${rd.aoe} on a pack`:""}</span>`:"")(raidDpsInfo(p,I))}${isNew(p)?`<span class="badge new" title="A race and class pairing that is new in Forever">New combo</span>`:""}${isSky(p)?`<span class="badge pack" title="Skyborne needs the Heroic Pack ($29.99) or higher">Pack race</span>`:""}${extra||""}<button class="why" data-why="${esc(p.name)}" aria-expanded="${open}" aria-label="Why ${esc(displayName(p))} scored ${s.score}">${open?"hide why":"why?"}</button></div></div>
-      <div class="fit"><div class="bar"><i style="width:${s.score}%;background:${tierColor(s.score)}"></i></div><div class="score" style="color:${tierColor(s.score)}">${s.score}</div></div>
-    </div>${open?detailHTML(p,I):""}`;
+        <div class="meta"><span class="fac-${p.faction}">${p.faction}</span>${(sp=>sp?`<span><b>${esc(sp)}</b></span>`:"")(specFor(p,I))}${(rd=>rd&&/^(PvE|Balanced)$/.test(I.goal)?`<span class="rdps" title="Planner raid ${esc(rd.what.replace("raid ",""))} for ${esc(rd.spec)} in starter gear at 60 with raid buffs and consumables${rd.aoe?"; the second number is a pack of four":""}; provisional until beta">${rd.dps} ${rd.unit}${rd.aoe?` · ${rd.aoe} pack`:""}</span>`:"")(raidDpsInfo(p,I))}${isNew(p)?`<span class="badge new" title="A race and class pairing that is new in Forever">New combo</span>`:""}${isSky(p)?`<span class="badge pack" title="Skyborne needs the Heroic Pack ($29.99) or higher">Pack race</span>`:""}${extra||""}<button class="why" data-why="${esc(p.name)}" aria-expanded="${open}" aria-label="Why ${esc(displayName(p))} scored ${s.score}">${open?"hide why":"why?"}</button></div></div>
+      <div class="fit"><div class="bar" aria-hidden="true"><i style="width:${barW(s.score)}%;background:${tierColor(s.score)}"></i></div><div class="score" style="color:${tierColor(s.score)}">${s.score}</div></div>
+    </div>${open?detailHTML(p,I).replace('class="detail tip"',`class="detail tip${cls}"`):""}`;
 }
 function renderFind(){
   const I=state.I, ranked=listed(I);
@@ -567,9 +609,12 @@ function renderFind(){
   $("#resSub").textContent=ranked.length?`${I.faction==="Any"?"Both factions":I.faction} · ${I.role==="Any"?"any role":I.role} · ${I.goal==="Balanced"?"balanced PvP and PvE":I.goal}`:"";
   $("#toggleAll").hidden=ranked.length<=LIST_TOP; $("#toggleAll").textContent=state.all?`Best ${LIST_TOP} only`:`Show all ${ranked.length}`;
   const act=document.activeElement, focusKey=act&&$("#list").contains(act)?(act.dataset.why?["data-why",act.dataset.why]:act.dataset.name?["data-name",act.dataset.name]:null):null;
-  if(!ranked.length){$("#list").innerHTML=`<div class="empty tip">No path matches those filters.${I.role!=="Any"&&rankAll(DATA.paths,I).length?` That class or race cannot play ${esc(I.role)}; pick another role or set class back to <b>Any</b>.`:` Set class or race back to <b>Any</b>, or pick a race your faction can play.`}</div>`;return}
-  $("#list").innerHTML=shown.map((s,i)=>rowHTML(s,i,I,"")).join("")+
-    (l=>l.length?`<div class="list-legend">${l.join(" ")}</div>`:"")([shown.some(x=>isSky(x.p))?"Pack race: Skyborne needs the Heroic Pack ($29.99) or higher.":"",shown.some(x=>isNew(x.p))?"New combo: a race and class pairing that is new in Forever.":""].filter(Boolean));
+  if(!ranked.length){$("#phMore").hidden=true;$("#list").innerHTML=`<div class="empty tip">No path matches those filters.${I.role!=="Any"&&rankAll(DATA.paths,I).length?` That class or race cannot play ${esc(I.role)}; pick another role or set class back to <b>Any</b>.`:` Set class or race back to <b>Any</b>, or pick a race your faction can play.`}</div>`;return}
+  const PH_TOP=3, extraN=shown.filter((s,i)=>i>=PH_TOP&&s.p.name!==sel).length; // phone only (CSS): rows past the top three wait behind Show more, the selected one always shows
+  barHi=shown[0].score; barLo=Math.min(shown[shown.length-1].score,barHi-8); barLo-=(barHi-barLo)*.15; // the lowest shown row keeps a stub of bar
+  $("#list").classList.toggle("ph-all",!!state.phAll); $("#phMore").hidden=!extraN; $("#phMore").setAttribute("aria-expanded",!!state.phAll); $("#phMore").textContent=state.phAll?"Show the top 3 only":`Show ${extraN} more`;
+  $("#list").innerHTML=shown.map((s,i)=>rowHTML(s,i,I,"",i>=PH_TOP&&s.p.name!==sel?" ph-x":"")).join("")+
+    (l=>l.length?`<div class="list-legend">${l.join(" ")}</div>`:"")(["Bars compare each path with the top of this list; the number is its score out of 100.",shown.some(x=>isSky(x.p))?"Pack race: Skyborne needs the Heroic Pack ($29.99) or higher.":"",shown.some(x=>isNew(x.p))?"New combo: a race and class pairing that is new in Forever.":""].filter(Boolean));
   // Selecting a row plans it on the right. On a phone the planner sits below the list, so the page moves to it (16 Sep 2026: a tap used to change nothing in view).
   $("#list").querySelectorAll(".row").forEach(r=>{const go=()=>{plOpen(r.dataset.name,null,true);if(matchMedia("(max-width:900px)").matches)$("#planner").scrollIntoView({block:"start",behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth"})};r.onclick=go;r.onkeydown=e=>{if(e.target!==r)return;if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}}}); // Enter on the why? or races button is that button's, not the row's (16 Sep 2026)
   $("#list").querySelectorAll("[data-why]").forEach(b=>b.onclick=e=>{e.stopPropagation();state.open=state.open===b.dataset.why?null:b.dataset.why;renderFind()});
@@ -577,6 +622,7 @@ function renderFind(){
   if(focusKey){const f=$("#list").querySelector(`[${focusKey[0]}="${CSS.escape(focusKey[1])}"]`); if(f)f.focus({preventScroll:true})} // keyboard focus survives the re-render (16 Sep 2026)
 }
 $("#toggleAll").onclick=()=>{state.all=!state.all;renderFind()};
+$("#phMore").onclick=()=>{state.phAll=!state.phAll;renderFind()};
 /* The planner follows the choices. A path the user selected stays while it is still listed and can fill the chosen role;
    otherwise the best fit is planned. */
 function syncPlanner(){
@@ -708,6 +754,7 @@ function renderAll(){renderChoices();renderFind();}
 /* ---------- Planner: talents and gear for one path (15 Sep 2026) ----------
    Data comes from planner-data.js (built by make_planner_data.py): Forever talent trees from Wowhead's BlizzCon data, items from
    WoWSims Classic (MIT) with Forever's stat rules applied. Loaded only when the planner opens, so the main page stays light. */
+const PL_GEAR_GROUPS=[["Armour",["Head","Shoulder","Chest","Wrist","Hands","Waist","Legs","Feet"]],["Jewellery and back",["Neck","Back","Ring 1","Ring 2","Trinket 1","Trinket 2"]],["Weapons",["Main hand","Off hand","Ranged"]]]; /* display order only (18 Sep 2026 UI audit); PL_SLOTS order stays, the link strings index it */
 const PL_SLOTS=[["Head",1],["Neck",2],["Shoulder",3],["Back",4],["Chest",5],["Wrist",6],["Hands",7],["Waist",8],["Legs",9],["Feet",10],["Ring 1",11],["Ring 2",11],["Trinket 1",12],["Trinket 2",12],["Main hand","mh"],["Off hand","oh"],["Ranged","rng"]];
 const PL_CLASS_ID={Druid:1,Hunter:2,Mage:3,Paladin:4,Priest:5,Rogue:6,Shaman:7,Warlock:8,Warrior:9};
 const PL_QCOLOR={2:"#1eff00",3:"#4d9eff",4:"#c07aff",5:"#ff8000"}; // item quality colours, blue and purple lifted to read on the dark ground (15 Sep UI audit)
@@ -1171,7 +1218,7 @@ function renderPlanner(){
     <div><div class="label">Planning</div><h2 style="margin:0;color:${TEXT_COLOR[p.cls]}">${esc(displayName(p))}</h2><div class="muted" style="font-size:14px"><span class="fac-${esc(p.faction)}">${esc(p.faction)}</span> · ${esc(p.roles)} · fit <b class="num" style="color:${tierColor(fitScore(p,state.I))}">${fitScore(p,state.I)}</b></div></div>
     <div><div class="label">Phase</div><div class="chips">${Object.entries(PL.phases).map(([k,ph])=>`<button class="chip" data-phase="${k}" aria-pressed="${k===state.pl.phase}" title="${esc(ph.level<60?`Level ${ph.level}: ${ph.pts} talent points, items up to item level ${ph.ilvl}, enchants up to profession skill ${ph.skill}`:ph.raid?"Level 60 with the raid tier (Classic Molten Core and Onyxia items stand in for the Forever raids)":"Level 60, dungeon, quest, crafted and world items")}">${esc(ph.label)}</button>`).join("")}</div></div>
     <div><div class="label">Spec</div><div class="chips">${specs.map(k=>`<button class="chip" data-spec="${esc(k)}" aria-pressed="${k===spec}">${esc(k.replace(/ \(.*\)$/,""))}</button>`).join("")}</div></div>
-    <div class="pl-actions"><button class="btn small" id="plPreset" ${sp.talents?"":"disabled"}>Load suggested talents</button><button class="btn small" id="plClearT">Clear talents</button>${(nHand=>nHand?`<button class="btn small" id="plAuto" title="Gear updates by itself as the build changes; slots picked by hand stay until you press this">Back to suggested gear (${nHand} picked by hand)</button>`:`<span class="muted" style="font-size:13px">Gear updates as you change the build.</span>`)(Object.keys({...state.pl.lock,...state.pl.enchLock}).length)}<span class="muted" style="font-size:13px">${plPhase().raid?"Molten Core and Onyxia loot included":"no raids open yet, so no raid loot"}; only gear out by this phase</span>${(plPhase().maxPhase||1)>=2?`<label><input type="checkbox" id="plPvp" ${state.pl.pvp?"checked":""}> include PvP rank rewards</label>`:`<span class="muted" style="font-size:13px">PvP rank rewards arrive with the honor system (Classic phase 2)</span>`}<button class="btn small" id="plLink">Copy link to this build</button></div>
+    <div class="pl-actions"><button class="btn small" id="plPreset" ${sp.talents?"":"disabled"}>Load suggested talents</button><button class="btn small" id="plClearT">Clear talents</button>${(nHand=>nHand?`<button class="btn small" id="plAuto" title="Gear updates by itself as the build changes; slots picked by hand stay until you press this">Back to suggested gear (${nHand} picked by hand)</button>`:`<span class="muted" style="font-size:13px">Gear updates as you change the build.</span>`)(Object.keys({...state.pl.lock,...state.pl.enchLock}).length)}${(plPhase().maxPhase||1)>=2?`<label><input type="checkbox" id="plPvp" ${state.pl.pvp?"checked":""}> include PvP rank rewards</label>`:""}<button class="btn small" id="plLink">Copy link to this build</button><details class="pl-more"><summary>Which items count</summary><p>${plPhase().raid?"Molten Core and Onyxia loot included":"No raids open yet, so no raid loot"}; only gear out by this phase.${(plPhase().maxPhase||1)>=2?"":" PvP rank rewards arrive with the honor system (Classic phase 2)."}</p></details></div>
     ${plProfHTML()}
     <details class="pl-about"><summary>Where these suggestions come from, and what the marks mean</summary>
       <p>${esc(PL.credit)} ${sp.talents?(plPvpKey(sp)?`These are the Pure PvP talents for level ${plLevel()}. ${(pins=>pins.length?`${pins.map(x=>esc(x[0])).join(", ")} ${pins.length>1?"are":"is"} placed first, because a stun, a snare or an escape raises no damage number and the estimate that picks the PvE build can never choose one (${pins.map(x=>`${esc(x[0])}: ${esc(x[2])}`).join("; ")}).`:"")(sp.pvpPins||[])} The rest of the ${plMaxPts()} points are chosen by damage and staying alive together, the same way the PvP gear is. Switch the goal on the first tab to PvE and the damage build comes back.`:plChosenKey(sp)?`The suggested talents for level ${plLevel()} are the ${plMaxPts()} points that raise this page's damage estimate most on the Forever trees (chosen by the estimate itself with starter gear on a Horde character, not copied from a Classic guide), so a talent the estimate does not model yet is not picked${sp.pvpT?"; choose Pure PvP on the first tab for a build with the control talents in it":""}.`:"The suggested talents are this page's own first build on the Forever trees, written from the talent text before anyone has played it; no guide has published Forever builds yet."):"No suggested build for this spec yet; place the points yourself."}</p>
@@ -1187,21 +1234,21 @@ function renderPlanner(){
   <div class="chips pl-treetabs" aria-label="Talent tree, one at a time on a phone">${trees.map((t,ti)=>`<button class="chip" data-tree="${ti}" aria-pressed="${ti===curTree}">${esc(t.name)} <span class="num">${treePts[ti]}</span></button>`).join("")}</div>
   <div class="pl-talents">
       ${trees.map((t,ti)=>`<div class="tree tip${ti===curTree?" is-cur":""}"><h3>${esc(t.name)} <span class="num muted">${state.pl.t[ti].reduce((a,b)=>a+b,0)}</span></h3><div class="tgrid">${sorted[ti].map((x,i)=>{const pts=state.pl.t[ti][i], can=plCanAdd(p.cls,ti,i), st=pts>=x.max?"maxed":pts?"part":can?"avail":"locked";
-        const fx=ftal[x.n], showMoved=state.plCmpClassic&&x.cl==="moved"; return `<div class="tal ${st}${fx?" has-fx":""}${x.new?" is-new":""}${showMoved?" is-moved":""}" style="grid-row:${x.r+1};grid-column:${x.c+1}" data-ti="${ti}" data-i="${i}" tabindex="0" role="button" aria-label="${esc(x.n)}, ${pts} of ${x.max}${st==="locked"?", locked":""}">${fx?`<b class="fx" aria-label="Forever change">F</b>`:x.new?`<b class="fx fx-new" aria-label="New in Forever">N</b>`:showMoved?`<b class="fx fx-moved" aria-label="Moved from its Classic position">M</b>`:""}<img src="${icon(x.ic,"medium")}" alt=""><div class="tn">${esc(x.n)}</div><div class="tp"><button aria-label="Remove a point from ${esc(x.n)}" data-d="-1" ${pts?"":"disabled"}>−</button><span class="num">${pts}/${x.max}</span><button aria-label="Add a point to ${esc(x.n)}" data-d="1" ${can?"":"disabled"}>+</button></div></div>`}).join("")}</div></div>`).join("")}
+        const fx=ftal[x.n], showMoved=state.plCmpClassic&&x.cl==="moved"; return `<div class="tal ${st}${fx?" has-fx":""}${x.new?" is-new":""}${showMoved?" is-moved":""}" style="grid-row:${x.r+1};grid-column:${x.c+1}" data-ti="${ti}" data-i="${i}" tabindex="0" role="button" aria-label="${esc(x.n)}, ${pts} of ${x.max}${st==="locked"?", locked":""}">${fx?`<b class="fx" aria-label="Forever change">F</b>`:x.new?`<b class="fx fx-new" aria-label="New in Forever">N</b>`:showMoved?`<b class="fx fx-moved" aria-label="Moved from its Classic position">M</b>`:""}<span class="ti"><img src="${icon(x.ic,"medium")}" alt=""><span class="num trk" aria-hidden="true">${pts}/${x.max}</span></span><div class="tn">${esc(x.n)}</div><div class="tp"><button aria-label="Remove a point from ${esc(x.n)}" data-d="-1" ${pts?"":"disabled"}>−</button><button aria-label="Add a point to ${esc(x.n)}" data-d="1" ${can?"":"disabled"}>+</button></div></div>`}).join("")}</div></div>`).join("")}
   </div>
   </section>
   <div class="pl-grid${state.plFold.gear?" one":""}">
     <div class="pl-side">
       ${(st=>`<div id="plSec-stats" ${state.plFold.stats?"hidden":""}><div class="tip pl-stats"><h3>Stats at level ${plLevel()} with this build</h3><div class="pl-statgrid">${st.rows.map(([l,v])=>`<span>${esc(l)}</span><b class="num">${esc(v)}</b>`).join("")}</div>
       ${st.effects.length?`<div class="label" style="margin-top:8px">Also from talents and racials</div><div class="muted" style="font-size:13px">${st.effects.map(esc).join(" · ")}</div>`:""}
-      <p class="muted" style="font-size:13px;margin:8px 0 0">${plLevel()<60?"Level-60 base numbers scaled to level "+plLevel()+" (provisional until a beta character is looked at)":"Classic level-60 base numbers"} plus race, gear, enchants, talents (${st.sources.length?esc(st.sources.slice(0,6).join(", "))+(st.sources.length>6?"…":""):"none with a stat effect yet"}), Legacy perks${state.pl.buffs?", raid buffs":""}${state.pl.cons?", consumables":""}. Change a talent, perk or item and every number here moves.</p></div></div>
+      <details class="pl-more"><summary>Where these numbers come from</summary><p>${plLevel()<60?"Level-60 base numbers scaled to level "+plLevel()+" (provisional until a beta character is looked at)":"Classic level-60 base numbers"} plus race, gear, enchants, talents (${st.sources.length?esc(st.sources.slice(0,6).join(", "))+(st.sources.length>6?"…":""):"none with a stat effect yet"}), Legacy perks${state.pl.buffs?", raid buffs":""}${state.pl.cons?", consumables":""}. Change a talent, perk or item and every number here moves.</p></details></div></div>
       <div id="plSec-dps" ${state.plFold.dps?"hidden":""}>${plDpsHTML(p,spec,st.S)}</div>
       <div id="plSec-legacy" ${state.plFold.legacy?"hidden":""}>${plLegacyHTML()}${plLegacyTFHTML()}</div>`)(stAll)}
       ${plForeverHTML(p.cls,fv)}
     </div>
-      <div class="tip pl-gear" id="plSec-gear" ${state.plFold.gear?"hidden":""}><h3>Gear</h3>${PL_SLOTS.map(([name,key])=>{const id=state.pl.gear[name], it=id&&plItem(id), open=state.plPick===name;
-        return `<div class="slot"><img src="${it?icon(it.ic,"small"):"data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="}" alt="" width="28" height="28"><div><div class="label">${esc(name)}</div>${it?`<a href="https://www.wowhead.com/${plWhDom(it)}/item=${it.id}" data-wowhead="item=${it.id}&domain=${plWhDom(it)}" target="_blank" rel="noopener" style="color:${PL_QCOLOR[it.q]||"#fff"};font-weight:700">${esc(it.n)}</a> <span class="muted">ilvl ${it.il}</span><div class="muted" style="font-size:13px">${esc(plStatSrcLine(it))}</div>${(alts=>alts.length>1?`<div class="alts" aria-label="Best, 2nd and 3rd choice for ${esc(name)}"><span class="label">Choices</span>${alts.map(a=>{const rk=a.rank===1?"Best":a.rank===2?"2nd":"3rd"; return `<a class="alt${a.chosen?" chosen":""}" href="https://www.wowhead.com/${plWhDom(a.it)}/item=${a.it.id}" data-wowhead="item=${a.it.id}&domain=${plWhDom(a.it)}" target="_blank" rel="noopener" style="border-color:${a.chosen?"var(--gold)":PL_QCOLOR[a.it.q]||"#777"}" ${a.chosen?"":`data-use="${a.it.id}" data-slot="${esc(name)}"`} aria-label="${rk}: ${esc(a.it.n)}, ${esc(plSrcShort(a.it))}${a.chosen?", chosen":", click to use it"}"><img src="${icon(a.it.ic,"small")}" alt="" width="30" height="30"><b class="altrank">${a.rank}</b></a>`}).join("")}</div>`:"")(plAlternates(name,key,p,spec))}${(list=>list.length?`<div class="muted" style="font-size:13px">Enchant: <select data-ench="${esc(name)}" aria-label="Enchant for ${esc(name)}"><option value="">none</option>${list.sort((a,b)=>plEnchScore(b,spec,name)-plEnchScore(a,spec,name)).map(e=>`<option value="${e.id}" ${state.pl.ench[name]===e.id?"selected":""}>${esc(e.n.replace(/^Enchant \w+( Weapon)? - /,""))} (${esc(plEnchLine(e))})</option>`).join("")}</select></div>`:"")(plEnchCandidates(name,it,p))}`:`<span class="muted">${name==="Off hand"&&(id2=>{const m=id2&&plItem(id2);return m&&m.h===4})(state.pl.gear["Main hand"])?"Two-handed weapon in use":"Empty"}</span>`}</div><div class="chips"><button class="btn small" data-pick="${esc(name)}">${open?"Close":"Change"}</button>${it?`<button class="btn small" data-clear="${esc(name)}">Clear</button>`:""}</div></div>
-        ${open?plPickerHTML(name,key,p,spec):""}`}).join("")}</div>
+      <div class="tip pl-gear" id="plSec-gear" ${state.plFold.gear?"hidden":""}><h3>Gear</h3>${PL_GEAR_GROUPS.map(([gl,names])=>`<h4 class="pl-ggrp">${gl}</h4>`+names.map(n=>PL_SLOTS.find(s=>s[0]===n)).map(([name,key])=>{const id=state.pl.gear[name], it=id&&plItem(id), open=state.plPick===name;
+        return `<div class="slot"><img src="${it?icon(it.ic,"small"):"data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="}" alt="" width="28" height="28"><div><div class="label">${esc(name)}</div>${it?`<a href="https://www.wowhead.com/${plWhDom(it)}/item=${it.id}" data-wowhead="item=${it.id}&domain=${plWhDom(it)}" target="_blank" rel="noopener" style="color:${PL_QCOLOR[it.q]||"#fff"};font-weight:700">${esc(it.n)}</a> <span class="muted">ilvl ${it.il}</span><div class="muted" style="font-size:13px">${esc(plStatSrcLine(it))}</div>${(alts=>alts.length>1?`<div class="alts" aria-label="Best, 2nd and 3rd choice for ${esc(name)}"><span class="label">Choices</span>${alts.map(a=>{const rk=a.rank===1?"Best":a.rank===2?"2nd":"3rd"; return `<a class="alt${a.chosen?" chosen":""}" href="https://www.wowhead.com/${plWhDom(a.it)}/item=${a.it.id}" data-wowhead="item=${a.it.id}&domain=${plWhDom(a.it)}" target="_blank" rel="noopener" style="border-color:${a.chosen?"var(--gold)":PL_QCOLOR[a.it.q]||"#777"}" ${a.chosen?"":`data-use="${a.it.id}" data-slot="${esc(name)}"`} aria-label="${rk}: ${esc(a.it.n)}, ${esc(plSrcShort(a.it))}${a.chosen?", chosen":", click to use it"}"><img src="${icon(a.it.ic,"small")}" alt="" width="30" height="30"><b class="altrank">${a.rank}</b></a>`}).join("")}</div>`:"")(plAlternates(name,key,p,spec))}${(list=>list.length?`<div class="muted" style="font-size:13px">Enchant: <select data-ench="${esc(name)}" aria-label="Enchant for ${esc(name)}"><option value="">none</option>${list.sort((a,b)=>plEnchScore(b,spec,name)-plEnchScore(a,spec,name)).map(e=>`<option value="${e.id}" ${state.pl.ench[name]===e.id?"selected":""}>${esc(e.n.replace(/^Enchant \w+( Weapon)? - /,""))} (${esc(plEnchLine(e))})</option>`).join("")}</select></div>`:"")(plEnchCandidates(name,it,p))}`:`<span class="muted">${name==="Off hand"&&(id2=>{const m=id2&&plItem(id2);return m&&m.h===4})(state.pl.gear["Main hand"])?"Two-handed weapon in use":"Empty"}</span>`}</div><div class="chips pl-slotact"><button class="btn small" data-pick="${esc(name)}">${open?"Close":"Change"}</button>${it?`<button class="btn small pl-clear" data-clear="${esc(name)}" aria-label="Clear ${esc(name)}">Clear</button>`:""}</div></div>
+        ${open?plPickerHTML(name,key,p,spec,it):""}`}).join("")).join("")}</div>
   </div>`;
   el.querySelectorAll("[data-spec]").forEach(b=>b.onclick=()=>{const k=b.dataset.spec; state.pl.spec=k; state.pl.t=plPreset(p.cls,k); state.plTree=undefined; state.pl.lock={}; state.pl.enchLock={}; plAutoProf(); plAutofill(); /* a new spec or phase is a new item pool: hand picks start over (17 Sep 2026) */ writeHash(); renderPlanner()});
   el.querySelectorAll("[data-fold]").forEach(b=>b.onclick=()=>{const k=b.dataset.fold; state.plFold[k]=!state.plFold[k]; renderPlanner(); if(!state.plFold[k]){const sec=$("#plSec-"+k); if(sec)sec.scrollIntoView({block:"nearest"})}});
@@ -1246,8 +1293,8 @@ function plPickerRows(name,key,p,spec){
   if(!list.length)return `<div class="muted">Nothing matches.</div>`;
   return list.map(it=>`<div class="pick"><img src="https://wow.zamimg.com/images/wow/icons/small/${it.ic}.jpg" alt="" width="24" height="24"><div><a href="https://www.wowhead.com/${plWhDom(it)}/item=${it.id}" data-wowhead="item=${it.id}&domain=${plWhDom(it)}" target="_blank" rel="noopener" style="color:${PL_QCOLOR[it.q]||"#fff"};font-weight:700">${esc(it.n)}</a> <span class="muted">ilvl ${it.il}${it.raid?" · raid":""}</span><div class="muted" style="font-size:13px">${esc(plStatSrcLine(it))}</div></div><button class="btn small" data-choose="${it.id}">Choose</button></div>`).join("");
 }
-function plPickerHTML(name,key,p,spec){
-  return `<div class="picker tip"><input id="plQ" type="search" placeholder="Search ${esc(name.toLowerCase())} items" aria-label="Search items"><div id="plList">${plPickerRows(name,key,p,spec)}</div><div class="muted" style="font-size:13px;margin-top:6px">Sorted by this spec's stat weights. Showing the top 40.</div></div>`;
+function plPickerHTML(name,key,p,spec,it){
+  return `<div class="picker tip"><div class="pl-pickhead"><input id="plQ" type="search" placeholder="Search ${esc(name.toLowerCase())} items" aria-label="Search items">${it?`<button class="btn small" data-clear="${esc(name)}">Empty this slot</button>`:""}</div><div id="plList">${plPickerRows(name,key,p,spec)}</div><div class="muted" style="font-size:13px;margin-top:6px">Sorted by this spec's stat weights. Showing the top 40.</div></div>`;
 }
 
 /* --- talent tooltip text: Wowhead's Forever data carries its own rank descriptions (its talent ids are not spell pages) --- */
@@ -1309,8 +1356,8 @@ function plProfHTML(){
   return `<div class="pl-prof" style="margin:8px 0 0">
     <div class="label">Professions <span class="muted" style="font-weight:400;text-transform:none">- two primary, as in the game</span></div>
     <div class="chips" style="margin:4px 0">${sel(0)}${sel(1)}${picked.length?`<button class="btn small" id="plProfClear">Clear</button>`:""}${state.pl.profLock?`<button class="btn small" id="plProfAuto">Back to suggested</button>`:""}<label class="muted" style="font-size:13px" title="Onyxia and most of Blackwing Lair are Dragonkin. Only Skinning's perk depends on this."><input type="checkbox" id="plOpt-beast" ${state.pl.beast?"checked":""}> boss is a Beast or Dragonkin</label>${(d=>d===null?"":`<span class="muted" style="font-size:13px">${d>0.05?`worth <b class="num" style="color:var(--gold)">${d.toFixed(1)}</b> per second here`:d<-0.05?`costs <b class="num">${(-d).toFixed(1)}</b> per second here`:"worth nothing to this estimate yet"}</span>`)(plProfDelta())}</div>
-    ${state.pl.profLock?"":`<p class="muted" style="font-size:13px;margin:4px 0">Suggested for your goal and profession priority. Change either to pick your own.</p>`}${lines?`<ul class="muted" style="font-size:13px;padding-left:18px;margin:4px 0">${lines}${picked.includes("Alchemy")&&!state.pl.cons?`<li>Alchemy is worth nothing until <b>consumables</b> is ticked, under Damage.</li>`:""}</ul>`:`<p class="muted" style="font-size:13px;margin:4px 0">No professions. Pick two, or press Back to suggested.</p>`}
-    <p class="muted" style="font-size:13px;margin:4px 0">Only Mining, Skinning and Alchemy have numbers published anywhere, and all of them trace back to BlizzCon attendee notes rather than a Blizzard post - the sites even disagree on whether Mining gives health or Stamina. The rest are listed with what they do and change nothing here until a beta tooltip says what they are worth.</p>
+    ${state.pl.profLock?"":`<p class="muted" style="font-size:13px;margin:4px 0">Suggested for your goal and profession priority. Change either to pick your own.</p>`}<details class="pl-more"><summary>What each profession does here</summary>${lines?`<ul class="muted" style="font-size:13px;padding-left:18px;margin:4px 0">${lines}${picked.includes("Alchemy")&&!state.pl.cons?`<li>Alchemy is worth nothing until <b>consumables</b> is ticked, under Damage.</li>`:""}</ul>`:`<p class="muted" style="font-size:13px;margin:4px 0">No professions. Pick two, or press Back to suggested.</p>`}
+    <p class="muted" style="font-size:13px;margin:4px 0">Only Mining, Skinning and Alchemy have numbers published anywhere, and all of them trace back to BlizzCon attendee notes rather than a Blizzard post - the sites even disagree on whether Mining gives health or Stamina. The rest are listed with what they do and change nothing here until a beta tooltip says what they are worth.</p></details>
   </div>`;
 }
 /* What the chosen professions are worth per second, measured: the estimate with them, minus the estimate with none. Null when the
@@ -1332,8 +1379,7 @@ function plDpsHTML(p,spec,S){
   if(est.none)return `<div class="tip pl-dps"><h3>Damage estimate</h3><p class="muted" style="font-size:14px;margin:4px 0">${est.none==="tank"||est.none==="healer"?`No damage estimate for a ${est.none} spec. Pick a damage spec above to see one.`:est.none==="weapon"?"Equip a main-hand weapon to see an estimate.":est.none==="ranged"?"Equip a ranged weapon to see an estimate.":"No damage model for this spec yet."}</p>${toggles}</div>`;
   const rc=PL_RACIAL[p.race], heal=est.kind==="hps", tank=est.kind==="tps";
   return `<div class="tip pl-dps"><h3>${heal?"Healing estimate":tank?"Threat estimate":"Damage estimate"} <span class="muted" style="font-weight:400;font-size:13px">${heal?`over a ${TANK_FIGHT/60}-minute raid fight`:`against a ${esc(S.target)}`}</span></h3>
-    <div class="pl-dpsnum"><b class="num" id="plDpsTotal">${Math.round(est.total)}</b><span class="muted"> ${heal?"healing per second (HPS)":tank?"threat per second (TPS)":"DPS"}, estimated</span></div>
-    ${tank&&est.aoe?`<div class="pl-dpsnum"><b class="num" id="plDpsAoe">${Math.round(est.aoe.total)}</b><span class="muted"> threat per second on a pack of ${est.aoe.targets}, estimated. The class ranking averages the two.</span></div>`:""}
+    ${(u=>`<div class="pl-dpsnum"><div class="pl-tiles"><div class="pl-tile"><span class="pl-tilek">${heal?"Raid fight":"Single target"}</span><span><b class="num" id="plDpsTotal">${Math.round(est.total)}</b> <span class="pl-tileu">${u}</span></span></div>${tank&&est.aoe?`<div class="pl-tile"><span class="pl-tilek">Pack of ${est.aoe.targets}</span><span><b class="num" id="plDpsAoe">${Math.round(est.aoe.total)}</b> <span class="pl-tileu">${u}</span></span></div>`:""}</div><p class="pl-tilecap">Estimated ${heal?"healing per second (HPS)":tank?"threat per second (TPS)":"damage per second (DPS)"}${tank&&est.aoe?" · class ranking uses the average of the two":""}</p></div>`)(heal?"HPS":tank?"TPS":"DPS")}
     ${toggles}
     <div class="pl-statgrid" style="grid-template-columns:auto auto">${est.parts.map(([n,v])=>`<span>${esc(n)}</span><b class="num">${Math.round(v)}</b>`).join("")}</div>
     ${tank&&est.aoe?`<details style="margin-top:6px"><summary class="label" style="cursor:pointer">Pack of ${est.aoe.targets}</summary><div class="pl-statgrid" style="grid-template-columns:auto auto">${est.aoe.parts.map(([n,v])=>`<span>${esc(n)}</span><b class="num">${Math.round(v)}</b>`).join("")}</div><ul class="muted" style="font-size:13px;padding-left:18px;margin:6px 0">${est.aoe.notes.map(n=>`<li>${esc(n)}</li>`).join("")}</ul></details>`:""}
@@ -1352,7 +1398,8 @@ function plLegacyHTML(){
   const branches=[...new Set(DATA.legacy.map(l=>l.Branch))];
   const anyFx=DATA.legacy.some(l=>l.fx);
   return `<div class="tip pl-legacy"><h3>Legacy points <span class="num" style="font-weight:400;font-size:14px"><span id="plLgSpent">${spent}</span> / 16</span> <button class="btn small" id="plLegacyReset" style="float:right">Clear</button></h3>
-    <p class="muted" style="font-size:13px;margin:0 0 6px">${DATA.legacyMeta&&DATA.legacyMeta[state.I.goal]?`${state.lgGoal===state.I.goal&&spent?`Filled with this page's suggested spend for <b>${esc(state.I.goal)}</b>`:`This page's suggested spend for <b>${esc(state.I.goal)}</b>`}: ${esc(DATA.legacyMeta.why[state.I.goal]||"")} <button class="btn small" id="plLegacyMeta">Load suggested for ${esc(state.I.goal)}</button><br>`:""}The 16 perks known so far (Wowhead, launch-era reporting; one point per rank assumed). ${anyFx?"Perks with a stat effect move the stats and the estimate above.":"None of them changes a level-60 combat stat, so the numbers above do not move yet; they change leveling, professions, gold and utility. The wiring is in place: a perk with a confirmed stat effect will move the stats and the estimate the moment it is added to the data."}</p>
+    <p class="muted" style="font-size:13px;margin:0 0 6px">${DATA.legacyMeta&&DATA.legacyMeta[state.I.goal]?`${state.lgGoal===state.I.goal&&spent?`Filled with this page's suggested spend for <b>${esc(state.I.goal)}</b>`:`This page's suggested spend for <b>${esc(state.I.goal)}</b>`}: ${esc(DATA.legacyMeta.why[state.I.goal]||"")} <button class="btn small" id="plLegacyMeta">Load suggested for ${esc(state.I.goal)}</button>`:""}</p>
+    <details class="pl-more"><summary>${anyFx?"Perks with a stat effect move the numbers above":"These perks do not move the combat numbers yet"}</summary><p>The 16 perks known so far (Wowhead, launch-era reporting; one point per rank assumed). ${anyFx?"Perks with a stat effect move the stats and the estimate above.":"None of them changes a level-60 combat stat, so the numbers above do not move yet; they change leveling, professions, gold and utility. The wiring is in place: a perk with a confirmed stat effect will move the stats and the estimate the moment it is added to the data."}</p></details>
     ${branches.map(b=>`<div class="label" style="margin-top:6px">${esc(b)}</div>${DATA.legacy.map((l,i)=>{if(l.Branch!==b)return "";const max=plLegacyMax(l), n=state.legacy[i]||0;
       return `<div class="pl-perk"><div><b>${esc(l.Perk)}</b> <span class="muted" style="font-size:13px">${esc(l["Per-rank or activation effect"])}${l["Restrictions / trigger"]?" · "+esc(l["Restrictions / trigger"]):""}</span>${l.fx?` <b class="fx">stat</b>`:""}</div>
         ${max?`<div class="stepper"><button aria-label="Remove a rank of ${esc(l.Perk)}" data-lg="${i}" data-d="-1" ${n>0?"":"disabled"}>−</button><span class="num">${n}/${max}</span><button aria-label="Add a rank of ${esc(l.Perk)}" data-lg="${i}" data-d="1" ${n>=max||spent>=16?"disabled":""}>+</button></div>`:`<span class="muted" style="font-size:13px">Ranks pending</span>`}</div>`}).join("")}`).join("")}
