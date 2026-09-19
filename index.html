@@ -475,14 +475,31 @@ function raceFitFor(p,I){
   if(I.goal==="Balanced")return avg(pve?pve.rating:p.racefit,pvp?pvp.rating:p.racefit);
   return p.racefit;
 }
+/* Professions (15 Sep 2026 audit, item c; applied 19 Sep 2026). The score used to read `p.prof`, which is the path's
+   Self-sufficient *starting* pair, whatever priority the visitor picked - so picking "Gold" was still scored on a crafting
+   pair. It now reads the pair that priority would really take, from DATA.profs (per class: Power / Gold / Crafting options
+   and the Self-sufficient start), falling back to p.prof where DATA is not loaded. Engineering also no longer earns the
+   Power credit by itself: every community report agrees it is the one profession with no personal stat perk (profNotes,
+   17 Sep 2026), so Power now turns on Alchemy alone. Blacksmithing and Enchanting joined the Crafting list at the same time:
+   they were missing only because the old test ran against the Self-sufficient pair, where they never appeared.
+   Known consequence, raised with the owner 19 Sep 2026: reading the real pair makes this component the SAME number for every
+   class at every priority, because Classic professions are not class-locked and each class's option for a given priority is
+   the same kind of pair. Its 5% therefore no longer separates anyone. Leaving it in place until the owner decides whether to
+   drop the component and redistribute the 5%, or score the professions' own perks once beta confirms them. */
+const PROF_KEY={Power:"Power option",Gold:"Gold option",Crafting:"Crafting option","Self-sufficient":"Self-sufficient start"};
+function profPairFor(p,I){
+  const D=typeof DATA!=="undefined"?DATA:null, rows=D&&D.profs, key=PROF_KEY[I.profPri];
+  const row=key&&rows&&rows.find(r=>r.Class===p.cls);
+  return (row&&row[key])||p.prof;
+}
 function parts(p,I){
-  const gather=/Skinning|Mining|Herbalism/.test(p.prof), core=avg(p.solo,p.raid,p.pvp), raid=raidRating(p,I);
+  const pair=profPairFor(p,I), gather=/Skinning|Mining|Herbalism/.test(pair), core=avg(p.solo,p.raid,p.pvp), raid=raidRating(p,I);
   const v={
     goal:{"Pure PvP":p.pvp,PvE:raid,Balanced:avg(raid,p.pvp),Casual:p.solo,"Gold farmer":avg(p.gold,p.solo)}[I.goal]??core,
     role:I.role==="Any"?core:(new RegExp(I.role).test(p.roles)?100:35),
     exp:{New:p.beginner,Returning:avg(p.beginner,p.flex),Experienced:85}[I.exp]??80,
     racefit:raceFitFor(p,I), flex:p.flex,
-    prof:{None:75,Power:/Engineering|Alchemy/.test(p.prof)?90:70,Gold:gather?90:65,"Self-sufficient":85,Crafting:/Tailoring|Leatherworking|Engineering|Alchemy/.test(p.prof)?90:72}[I.profPri]??75,
+    prof:{None:75,Power:/Alchemy/.test(pair)?90:70,Gold:gather?90:65,"Self-sufficient":85,Crafting:/Tailoring|Leatherworking|Blacksmithing|Enchanting|Engineering|Alchemy/.test(pair)?90:72}[I.profPri]??75,
   };
   const w=weights(I);
   return PART_META.map(([k,label,c])=>({k,label,c,w:w[k],raw:v[k],pts:v[k]*w[k]}));
@@ -498,7 +515,7 @@ function whyItFits(p,I){
 function rankAll(paths,I){
   return paths.map((p,i)=>({p,i,score:fitScore(p,I)})).filter(s=>s.score>0).sort((a,b)=>b.score-a.score||a.i-b.i);
 }
-if(typeof module!=="undefined") module.exports={fitScore,rankAll,whyItFits,parts,weights,raidDpsInfo,pvpRaceInfo,pveRaceInfo,moveGain};
+if(typeof module!=="undefined") module.exports={fitScore,rankAll,whyItFits,parts,weights,raidDpsInfo,pvpRaceInfo,pveRaceInfo,moveGain,profPairFor};
 
 
 const CLASS_COLOR={Warrior:"#C69B6D",Paladin:"#F48CBA",Hunter:"#AAD372",Rogue:"#FFF468",Priest:"#FFFFFF",Shaman:"#0070DD",Mage:"#3FC7EB",Warlock:"#8788EE",Druid:"#FF7C0A"};
