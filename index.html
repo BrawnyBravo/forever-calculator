@@ -2424,16 +2424,24 @@ const DPS_MODELS={
     notes.push(`Mana: ${S.mana} to start plus ${perSec.toFixed(1)} a second (${S.mp5} per 5 seconds, ${Math.round(whileCasting*100)}% of Spirit regeneration while casting from Mage Armor${R.num("Arcane Meditation",0)?" and Arcane Meditation":""}), over ${TANK_FIGHT/60} minutes${cc<1?`; Clearcasting makes ${Math.round((1-cc)*100)}% of casts free`:""}. Evocation, mana gems, Arcane Power and Presence of Mind are not counted.`);
     return [["Arcane Blast",used.reduce((s,[c,r])=>s+c.abDmg*r,0)],["Arcane Missiles",used.reduce((s,[c,r])=>s+c.amDmg*r,0)]];
   },
+  /* Frostbolt spell power coefficient corrected 19 Sep 2026: 0.857 -> 0.814. 0.857 is the bare cast-time ratio (3 / 3.5); the real coefficient carries Classic's
+     5% penalty for the spell's slow, and the beta client keeps it - the public Forever sim reads .814 at every rank from 5 up (`sim/mage/frostbolt.go`). That the
+     penalty is deliberate there is clear from Mind Flay, where the same sim drops it on purpose (.167 a tick, commented "Classic's .15 carried a penalty for the
+     slow"), so Forever removes these case by case and has not removed Frostbolt's. The base damage here was already the client's. */
   Frost(S,R,notes){
     const cast=Math.max(1.5,3-R.num("Improved Frostbolt",0)); const wc=R.rank("Winter's Chill")?R.num("Winter's Chill",1)*5:0; const S2={...S,scritSchool:{...S.scritSchool,Frost:(S.scritSchool.Frost||0)+wc}};
-    notes.push(`Frostbolt rank 11 (457 to 493 in Forever, Classic 515 to 555; ${cast}s cast, 0.857 spell damage coefficient).${wc?" Winter's Chill kept at 5 stacks (+"+wc+"% crit).":""} Frozen-target Shatter crits are not counted.`);
-    return [["Frostbolt",dpsSpellEV(DPS_K*475,0.857*dpsLow("Frostbolt"),S2,"Frost",cast)]];
+    notes.push(`Frostbolt rank 11 (457 to 493 in Forever, Classic 515 to 555; ${cast}s cast, 0.814 spell damage coefficient).${wc?" Winter's Chill kept at 5 stacks (+"+wc+"% crit).":""} Frozen-target Shatter crits are not counted.`);
+    return [["Frostbolt",dpsSpellEV(DPS_K*475,0.814*dpsLow("Frostbolt"),S2,"Frost",cast)]];
   },
+  /* Shadow Word: Pain base corrected 19 Sep 2026: it was fed `1236*762/852` = 1105, a leftover Classic constant patched by a ratio when the caster ranks were
+     reworked, where every sibling dot here (Corruption 438, Immolate 275, Moonfire 240) is fed its plain Forever total. `dpsSpellEV` takes the dot's FULL damage
+     over the duration passed, so the right input is the beta client's rank-8 total of 762 over 18 s at 0.2 a tick - which is also what this model's own note
+     already claimed on the page. The old number overstated the dot by 45%. Source: the public Forever sim's `sim/priest/shadow_word_pain.go` rank table. */
   Shadow(S,R,notes){
     const sw=R.rank("Shadow Weaving")?R.num("Shadow Weaving",1)*5:0, form=R.rank("Shadowform")?R.num("Shadowform",0):0;
     const S2={...S,schoolPct:{...S.schoolPct,Shadow:(S.schoolPct.Shadow||0)+sw+form}};
     const mbCd=8-R.num("Improved Mind Blast",0); const mf=R.rank("Mind Flay")?1+R.num("Improved Mind Flay",0)/100:0;
-    const parts=[["Shadow Word: Pain",dpsSpellEV(DPS_K*1236*762/852,1.2,S2,"Shadow",18,1,0,true)]];
+    const parts=[["Shadow Word: Pain",dpsSpellEV(DPS_K*762,1.2,S2,"Shadow",18,1,0,true)]];
     const mbTime=1.5/mbCd; parts.push([`Mind Blast every ${mbCd}s`,dpsSpellEV(DPS_K*490.5,0.4286,S2,"Shadow",mbCd)]);
     if(mf)parts.push(["Mind Flay filler",dpsSpellEV(DPS_K*390,0.501,S2,"Shadow",3,mf)*(1-mbTime-1.5/18)]); else parts.push(["Smite filler",dpsSpellEV(DPS_K*176.5,0.714,S2,"Holy",2.5)*(1-mbTime-1.5/18)]);
     notes.push(`Forever beta game-file ranks (Shadow Word: Pain 762 over 18 s at 0.2 a tick, Mind Blast 477 to 504, Mind Flay 390, Smite 166 to 187; Classic 852, 508 to 537, 426, 384 to 429). Shadow Word: Pain rank 8 kept up, Mind Blast rank 9 every ${mbCd}s, ${mf?"Mind Flay rank 6":"Smite"} the rest of the time. Dots can crit (Forever, measured in beta logs).${sw?" Shadow Weaving at 5 stacks.":""}${form?" Shadowform +"+form+"%.":""}`);
