@@ -141,14 +141,29 @@ h3{font-family:var(--display);font-weight:400;font-size:17px;margin:0;color:var(
 /* Raid team builder (26 Oct 2026) */
 .rt-pick{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center;margin:var(--s2) 0} .rt-note{margin:var(--s1) 0 var(--s2);color:var(--ink-2)} .rt-total{margin:var(--s2) 0}
 .rt-est{font-size:11px;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--frame-hi);border-radius:2px;padding:0 4px;color:var(--ink-3);white-space:nowrap}
-.rt-groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:var(--s2)} .rt-group{padding:var(--s2);display:grid;gap:var(--s1);align-content:start;min-width:0} .rt-group h3{margin:0;font-size:14px}
-.rt-slot{min-height:44px;padding:6px 8px;border:1px solid var(--frame);border-radius:3px} .rt-slot.locked{border-color:var(--gold-soft)}
-.rt-head{display:flex;justify-content:space-between;gap:var(--s2);align-items:center} .rt-name{font-weight:600;overflow-wrap:anywhere} .rt-spec{font-size:13px;color:var(--ink-2)} .rt-lock{min-height:28px;padding:2px 8px;font-size:12px;flex:none}
-.rt-why{margin:2px 0 0;font-size:13px}
+/* 27 Oct 2026 (owner: "clunky and weird ... make it better", "more user friendly"): plain-word choices, a summary of what the team covers,
+   one compact row per player, boss times folded away. */
+.rt-controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:var(--s2) var(--s4);margin:var(--s2) 0}
+.rt-ctl .label{display:block;margin-bottom:var(--s1)}
+.rt-summary{border:1px solid var(--frame);border-radius:4px;background:var(--panel-2);padding:var(--s3);margin:var(--s3) 0}
+.rt-sumhead{display:flex;flex-wrap:wrap;justify-content:space-between;gap:var(--s1) var(--s3);align-items:baseline}
+.rt-covers{display:flex;flex-wrap:wrap;gap:var(--s1);margin:var(--s2) 0 0}
+.rt-cov{font-size:13px;border:1px solid var(--frame-hi);border-radius:3px;padding:1px 8px;color:var(--ink)} .rt-cov.have::before{content:"\2713  ";color:var(--uncommon)}
+.rt-cov.miss{color:var(--ink-3);border-style:dashed} .rt-cov.miss::before{content:"\2717  "}
+.rt-explain{margin:var(--s2) 0 0;font-size:14px;color:var(--ink-2);max-width:95ch}
+.rt-groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:var(--s2) var(--s4)} .rt-group{padding:var(--s2);display:grid;gap:0;align-content:start;min-width:0} .rt-group h3{margin:0 0 var(--s1);font-size:14px}
+.rt-slot{display:grid;grid-template-columns:42px minmax(0,1fr) auto auto;gap:2px var(--s2);align-items:center;padding:5px 2px;border-top:1px solid var(--frame)} .rt-slot:first-of-type{border-top:0}
+.rt-slot.locked{background:#1d2134;box-shadow:inset 3px 0 0 var(--gold-soft)}
+.rt-role{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3);text-align:center} .rt-role.tank{color:#c69b6d} .rt-role.heal{color:var(--t-green)}
+.rt-name{font-weight:600;overflow-wrap:anywhere;line-height:1.25} .rt-spec{font-weight:400;font-size:13px;color:var(--ink-2)}
+.rt-num{font-family:var(--mono);font-size:13px;color:var(--ink-2);white-space:nowrap;text-align:right}
+.rt-lock{min-height:28px;padding:2px 8px;font-size:12px;flex:none}
+.rt-why{grid-column:2/-1;margin:0;font-size:12px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rt-add{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center;margin:var(--s2) 0 var(--s3)} .rt-add select{background:#0b1020;border:1px solid var(--frame);border-radius:3px;padding:4px 6px;min-height:30px;max-width:100%;color:var(--ink)}
-.rt-bosses{width:100%;table-layout:fixed;overflow-wrap:anywhere;margin-top:var(--s3);border-collapse:collapse} .rt-how{margin-top:var(--s3);font-size:13px;color:var(--ink-2)} .rt-how summary{cursor:pointer} .rt-how p{max-width:90ch}
+.rt-bosslist{margin-top:var(--s3)} .rt-bosslist summary{cursor:pointer;color:var(--ink-2)}
+.rt-bosses{width:100%;table-layout:fixed;overflow-wrap:anywhere;margin-top:var(--s2);border-collapse:collapse} .rt-how{margin-top:var(--s3);font-size:13px;color:var(--ink-2)} .rt-how summary{cursor:pointer} .rt-how p{max-width:90ch}
 .badge.invite{color:var(--ink-2);border-color:var(--frame-hi)}
-@media (max-width:700px){.rt-groups{grid-template-columns:1fr}}
+@media (max-width:700px){.rt-groups{grid-template-columns:1fr} .rt-slot{grid-template-columns:34px minmax(0,1fr) auto auto} .rt-why{white-space:normal}}
 .more-panel{margin-top:var(--s4);display:grid;gap:var(--s4)}
 .tbl{overflow-x:auto}
 table{border-collapse:collapse;width:100%}
@@ -1098,9 +1113,42 @@ document.querySelectorAll("[data-more]").forEach(b=>b.onclick=()=>{showMore(b.da
 
 /* ---------- Raid team builder (26 Oct 2026; raid.js does the planning, this only draws) ---------- */
 const RT_RAIDS=[["bd","Barrow Deeps (10)"],["hs","Hyjal Summit (20)"],["ony","Onyxia's Lair (40)"]];
-const RT_ROUTES=[["casual","Casual"],["parse","Parse"],["hcparse","Hardcore Parse"],["speed","Speedrun"]];
+// plain-word names (27 Oct 2026); the link codes (raid.js RAID_ROUTE_CODE) and the old names in "How the team is built" are unchanged
+const RT_ROUTES=[["casual","Clear it safely"],["parse","Most damage"],["hcparse","Best team per boss"],["speed","Fastest full run"]];
+const RT_OLD_NAME={casual:"Casual",parse:"Parse",hcparse:"Hardcore Parse",speed:"Speedrun"};
 const RT_STACK=" This is the raw fastest team, so it may stack one spec.";
-const RT_NOTE={casual:"Easiest to clear without wipes: enough tanks, extra healers, every kind of removal and a battle resurrection, then the most damage for shorter fights; at most 2 of one spec in a 10, 3 in a 20, 5 in a 40 (players you lock in count toward it, and you can lock in more yourself).",parse:"One team for the whole raid, everything ready at each pull: the shortest total kill time."+RT_STACK,hcparse:"Try-hard, not the Hardcore game mode: a different team for each boss, built around the players you lock in."+RT_STACK,speed:"Fastest full clear: trash, bosses and walking on one clock, cooldowns averaged."+RT_STACK};
+const RT_NOTE={casual:"Easiest to clear: enough tanks, extra healers, every cure and a battle res first, then the most damage; at most 2 of one spec in a 10, 3 in a 20, 5 in a 40 (players you lock in count, and you can lock in more yourself).",parse:"One team for the whole raid with the shortest total kill time."+RT_STACK,hcparse:"A different team for each boss, built around the players you lock in."+RT_STACK,speed:"Fastest full clear: trash, bosses and walking on one clock."+RT_STACK};
+const RT_ROLE={tank:"Tank",heal:"Heal",dps:"DPS"}, RT_UNIT={tank:"threat/s",heal:"healing/s",dps:"damage/s"};
+/* What the team covers, for the summary: each kind of removal, a battle resurrection, and every scored buff or debuff that reaches someone
+   (named after a member who provides it: Faerie Fire and Curse of Recklessness share one armor key). */
+function rtCovers(team,V,faction){
+  const cls=new Set(team.map(m=>m.cls)), out=[];
+  for(const t of Object.keys(RAID_DISPELS))out.push({have:RAID_DISPELS[t].some(c=>cls.has(c)),name:t[0].toUpperCase()+t.slice(1)+" removal"});
+  out.push({have:RAID_BREZ.some(c=>cls.has(c)),name:"Battle res"});
+  const reach=raidReach(team,V,faction,"boss-long"), seen=new Set();
+  for(const b of RAID_BUFFS)if(!seen.has(b.vkey)&&reach.some(s=>s.has(b.vkey))&&team.some(m=>raidProvides(m,b,V))){
+    seen.add(b.vkey); const gs=[...new Set(team.filter((m,i)=>reach[i].has(b.vkey)).map(m=>m.group+1))].sort((a,c)=>a-c);
+    out.push({have:true,name:b.name+(b.reach==="party"||b.slot==="air"?` (group ${gs.join(", ")})`:"")});
+  }
+  return out;
+}
+/* The row's small line: what the player adds beyond the number already shown (raid.js raidWhy's own-output clause dropped); the full
+   reason stays in its tooltip. */
+function rtExtra(why){
+  const s=why.replace(/^Locked in\. /,"").replace(/^(Tank|Healer), about \d+ (threat|healing) a second \(estimate\)|^About \d+ damage a second \(estimate\)/,"").replace(/^; (also )?/,"");
+  return s?s[0].toUpperCase()+s.slice(1):"";
+}
+/* Why the picks look the way they do: two or more of a spec whose debuff Forever made personal (raid.js RAID_UNSCORED), and the Warlock curse. */
+function rtExplain(team){
+  const n={}; team.forEach(m=>{const k=m.spec+" "+m.cls; n[k]=(n[k]||0)+1});
+  const solo=RAID_UNSCORED.filter(u=>/^personal in Forever/.test(u.why)&&n[u.from]>=2);
+  const parts=[];
+  const list=a=>a.length<2?a.join(""):a.slice(0,-1).join(", ")+" and "+a[a.length-1];
+  if(solo.length)parts.push(`Why several ${list(solo.map(u=>u.from+"s"))}? In Forever (talent text), ${list(solo.map(u=>u.name))} ${solo.length>1?"boost":"boosts"} only the caster, not the boss, so a second one loses nothing.`);
+  if(team.some(m=>m.cls==="Warlock"))parts.push("Each Warlock keeps up one curse, whichever helps this team most; the same curse never counts twice.");
+  parts.push("Every buff and debuff counts once, and only for the players it reaches.");
+  return parts.join(" ");
+}
 const rtEst=()=>`<span class="rt-est" title="An assumed number: Forever's raid bosses are not published before 9 Dec 2026">estimate</span>`;
 // the panel's choices: from the link (readHash), else Barrow Deeps, the find panel's faction when it is Horde or Alliance, Casual, nobody locked
 function rtState(){
@@ -1116,32 +1164,45 @@ function renderRaid(){
   if(st.locked.length>raid.size)st.locked.length=raid.size; // a smaller raid keeps the first locks only (the plan's warning says so); the link follows
   const shown=hc?plan.perBoss[st.boss]:{team:plan.team,result:plan.result}, team=shown.team, res=shown.result;
   const c={tank:0,heal:0,dps:0}; team.forEach(m=>c[m.role]++);
-  const tot=st.route==="parse"?`Total kill time about ${Math.round(res.totalSec/60)} min`:st.route==="speed"?`Full clear about ${Math.round(res.clearSec/60)} min`:st.route==="casual"?`Clear safety: ${res.rating} (${Math.round(res.safety)} of 100)`:`Kill time on ${esc(raid.bosses[st.boss].name)} about ${rtMin(res.totalSec)}`;
+  const tot=st.route==="parse"?`Total kill time about ${Math.round(res.totalSec/60)} min`:st.route==="speed"?`Full clear about ${Math.round(res.clearSec/60)} min`:st.route==="casual"?`Safe to clear: ${res.rating} (${Math.round(res.safety)} of 100)`:`Kill time on ${esc(raid.bosses[st.boss].name)} about ${rtMin(res.totalSec)}`;
   const noDps=!c.dps&&st.route!=="casual";
   const chips=(attr,list,cur)=>list.map(([k,l])=>`<button class="chip" data-rt-${attr}="${esc(k)}" aria-pressed="${k===cur}">${esc(l)}</button>`).join("");
   const G=Math.ceil(raid.size/5), groups=Array.from({length:G},(_,g)=>team.map((m,i)=>({m,i})).filter(x=>x.m.group===g));
   const full=st.locked.length>=raid.size;
-  const slot=({m,i})=>`<div class="rt-slot${m.locked?" locked":""}" data-i="${i}"><div class="rt-head"><span class="rt-name" style="color:${TEXT_COLOR[m.cls]}">${esc(m.path)}</span><button class="btn small rt-lock" aria-label="${m.locked?"Unlock":"Lock in"} ${esc(m.spec)} ${esc(m.path)}" ${!m.locked&&full?"disabled":""}>${m.locked?"Unlock":"Lock in"}</button></div><div class="rt-spec">${esc(m.spec)} · ${m.role==="tank"?"tank":m.role==="heal"?"healer":"damage"}</div><p class="rt-why">${esc(m.why)}</p></div>`;
+  const reach=raidReach(team,V,st.faction,"boss-long");
+  const slot=({m,i})=>`<div class="rt-slot${m.locked?" locked":""}" data-i="${i}"><span class="rt-role ${m.role}">${RT_ROLE[m.role]}</span><span class="rt-name" style="color:${TEXT_COLOR[m.cls]}">${esc(m.path)} <span class="rt-spec">· ${esc(m.spec.replace(" ("+m.cls+")",""))}</span></span><span class="rt-num" title="Level-60 estimate in starter raid gear">${Math.round(raidOutput(m,reach[i],V,st.faction,"boss-long"))} ${RT_UNIT[m.role]}</span><button class="btn small rt-lock" aria-label="Lock in ${esc(m.spec)} ${esc(m.path)}" aria-pressed="${m.locked}" title="${m.locked?"Locked in: click to unlock":"Keep this player in the team"}" ${!m.locked&&full?"disabled":""}>${m.locked?"Locked ✓":"Lock"}</button><p class="rt-why" title="${esc(m.why)}">${esc(rtExtra(m.why))}</p></div>`;
+  const covers=rtCovers(team,V,st.faction);
+  const avgBoss=(()=>{const s=raid.bosses.map((b,bi)=>{const r=hc?plan.perBoss[bi].result.perBoss[0]:res.perBoss[bi]; return r&&r.sec}).filter(Number.isFinite); return s.length?s.reduce((a,b)=>a+b,0)/s.length:NaN})();
   const bossRows=raid.bosses.map((b,bi)=>{const r=hc?plan.perBoss[bi].result.perBoss[0]:res.perBoss[bi]; return `<tr data-boss="${bi}"><td>${esc(b.name)}${b.est?" "+rtEst():""}</td><td>${rtMin(b.sec)}${b.targets>1?`, ${b.targets} targets`:""}, ${Math.round(b.move*100)}% moving</td><td>${r&&Number.isFinite(r.sec)?rtMin(r.sec):"no damage dealers"} ${rtEst()}</td></tr>`}).join("");
   const specsOf=k=>Object.keys(V.specs).filter(s=>V.specs[s].cls===k), pathsOf=k=>DATA.paths.filter(p=>p.cls===k&&p.faction===st.faction);
   const addCls=st.addCls&&CLASSES.includes(st.addCls)?st.addCls:"Warrior";
   const opt=(list,cur)=>list.map(x=>`<option value="${esc(x)}"${x===cur?" selected":""}>${esc(x)}</option>`).join("");
   const minRows=Object.entries(RAID_MIN).map(([n,m])=>`${n} players: ${m.tank} tanks, ${m.heal} healers (Casual ${m.heal+(RAID_CASUAL_EXTRA_HEAL[n]||0)})`).join("; ");
   el.innerHTML=`
-    <div class="rt-pick"><span class="label">Faction</span><span class="chips">${chips("faction",[["Horde","Horde"],["Alliance","Alliance"]],st.faction)}</span>
-      <span class="label">Raid</span><span class="chips">${chips("raid",RT_RAIDS,st.raid)}</span>
-      <span class="label">Route</span><span class="chips">${chips("route",RT_ROUTES,st.route)}</span></div>
+    <div class="rt-controls">
+      <div class="rt-ctl"><span class="label">Your side</span><span class="chips">${chips("faction",[["Horde","Horde"],["Alliance","Alliance"]],st.faction)}</span></div>
+      <div class="rt-ctl"><span class="label">Raid</span><span class="chips">${chips("raid",RT_RAIDS,st.raid)}</span></div>
+      <div class="rt-ctl" style="grid-column:1/-1"><span class="label">What matters most</span><span class="chips">${chips("route",RT_ROUTES,st.route)}</span></div>
+    </div>
     <p class="rt-note">${esc(RT_NOTE[st.route])}</p>
     ${hc?`<div class="rt-pick"><span class="label">Boss</span><span class="chips">${raid.bosses.map((b,bi)=>`<button class="chip" data-rt-boss="${bi}" aria-pressed="${bi===st.boss}" title="${esc(b.name)}">${bi+1}</button>`).join("")}</span></div>`:""}
-    <p class="rt-total"><b>${c.tank} tanks · ${c.heal} healers · ${c.dps} damage</b> · ${noDps?"no damage dealers, so no kill time":tot} ${rtEst()}</p>
+    <div class="rt-summary">
+      <div class="rt-sumhead rt-total"><b>${c.tank} tanks · ${c.heal} healers · ${c.dps} damage</b><span>${noDps?"No damage dealers, so no kill time":tot} ${rtEst()}</span></div>
+      <div class="rt-covers" aria-label="What this team covers">${covers.map(x=>`<span class="rt-cov ${x.have?"have":"miss"}">${x.have?"":"No "}${esc(x.have?x.name:x.name.toLowerCase())}</span>`).join("")} ${rtEst()}</div>
+      <p class="rt-explain rt-cures" style="margin-top:var(--s1)">Cures and battle res follow Classic's class rules, not yet checked in Forever.</p>
+      <p class="rt-explain">${esc(rtExplain(team))}</p>
+    </div>
     ${plan.warnings.map(w=>`<p class="rt-warn warnline">${esc(w)}</p>`).join("")}
-    <form class="rt-add"><span class="label">Lock in a player</span>
-      <select name="cls" aria-label="Class">${opt(CLASSES,addCls)}</select><select name="spec" aria-label="Spec">${opt(specsOf(addCls),"")}</select><select name="path" aria-label="Race">${opt(pathsOf(addCls).map(p=>p.name),"")}</select>
-      <button class="btn small" type="submit" ${full?"disabled":""}>Add</button><span class="muted">${st.locked.length} of ${raid.size} locked in</span></form>
+    <form class="rt-add"><span class="label">Add your player</span>
+      <select name="cls" aria-label="Class">${opt(CLASSES,addCls)}</select><select name="spec" aria-label="Spec">${opt(specsOf(addCls),"")}</select><select name="path" aria-label="Race"><option value="">Best race</option>${opt(pathsOf(addCls).map(p=>p.name),"")}</select>
+      <button class="btn small" type="submit" ${full?"disabled":""}>Add</button><span class="muted">${st.locked.length} of ${raid.size} locked in · the open places re-plan around them</span></form>
+    <p class="muted" style="margin:0 0 var(--s1);font-size:13px">Numbers are level-60 estimates in starter raid gear. ${rtEst()}</p>
     <div class="rt-groups">${groups.map((g,gi)=>`<div class="rt-group tip"><h3>Group ${gi+1}</h3>${g.map(slot).join("")}</div>`).join("")}</div>
+    <details class="rt-bosslist"><summary>${!Number.isFinite(avgBoss)?"Boss times: no damage dealers, so no kill time":raid.bosses.length===1?`Kill time about ${rtMin(avgBoss)} (estimate) · show the boss`:`Boss times: about ${rtMin(avgBoss)} each with ${hc?"each boss's team":"this team"} (estimate) · show all ${raid.bosses.length}`}</summary>
     <table class="rt-bosses tbl"><thead><tr><th>Boss</th><th>Fight (assumed)</th><th>${hc?"Kill time, that boss's team":"Kill time, this team"}</th></tr></thead><tbody>${bossRows}</tbody></table>
-    ${st.route==="speed"?`<p class="muted">Trash: ${raid.trash.packs} packs, and ${rtMin(raid.trash.walkSec)} of walking ${rtEst()}</p>`:""}
+    ${st.route==="speed"?`<p class="muted">Trash: ${raid.trash.packs} packs, and ${rtMin(raid.trash.walkSec)} of walking ${rtEst()}</p>`:""}</details>
     <details class="rt-how"><summary>How the team is built</summary>
+      <p>The four choices were called ${RT_ROUTES.map(([k,l])=>`${esc(l)} (${esc(RT_OLD_NAME[k])})`).join(", ")} before 27 Oct 2026.</p>
       <p>Each player's own damage, healing or threat comes from this page's level-60 estimate in starter raid gear. A buff or debuff counts once for the raid and only for the players it reaches: totems, Battle Shout, Leader of the Pack and Trueshot Aura reach their group of 5; each Paladin gives each player one Blessing; each Warlock keeps one Curse; one air totem per group. Tanks and healers add no damage to the kill time.</p>
       <p>Minimum tanks and healers (the builder's choice, an estimate until the bosses are known): ${esc(minRows)}.</p>
       <p>Casual's clear safety is out of 100 and is about clearing the raid, not how easy a class is to play: healing against the minimum plus the Casual extra healers (50), tanks (15), each kind of removal covered, curse, poison, disease and magic (6 each), a battle resurrection (11). Among teams that meet these, the one with the most damage wins: shorter fights are safer. High at ${RAID_RATING.High} or more, Medium at ${RAID_RATING.Medium}. A fight with more than one target leans toward the pack numbers; moving costs melee the whole moving share and others 60% of it.</p>
@@ -1159,8 +1220,10 @@ function renderRaid(){
     if(m.locked){const k=st.locked.findIndex(l=>l.spec===m.spec&&l.path===m.path); if(k>=0)st.locked.splice(k,1)} else if(st.locked.length<raid.size)st.locked.push({spec:m.spec,path:m.path});
     rtRedraw()});
   const f=el.querySelector("form.rt-add");
-  f.elements.cls.onchange=()=>{st.addCls=f.elements.cls.value; f.elements.spec.innerHTML=opt(specsOf(st.addCls),""); f.elements.path.innerHTML=opt(pathsOf(st.addCls).map(p=>p.name),"")};
-  f.onsubmit=e=>{e.preventDefault(); const spec=f.elements.spec.value, path=f.elements.path.value; if(st.locked.length<raid.size&&raidMember(spec,path,V,st.faction,DATA.paths)){st.addCls=f.elements.cls.value;st.locked.push({spec,path});rtRedraw()}};
+  f.elements.cls.onchange=()=>{st.addCls=f.elements.cls.value; f.elements.spec.innerHTML=opt(specsOf(st.addCls),""); f.elements.path.innerHTML=`<option value="">Best race</option>`+opt(pathsOf(st.addCls).map(p=>p.name),"")};
+  // "Best race": the race with the highest multiplier for that spec on this side (ties: the first listed), the builder's own rule
+  const bestPath=spec=>{let b=null; for(const p of pathsOf(f.elements.cls.value)){const m=raidMember(spec,p.name,V,st.faction,DATA.paths); if(m&&(!b||m.mult>b.mult))b=m} return b?b.path:""};
+  f.onsubmit=e=>{e.preventDefault(); const spec=f.elements.spec.value, path=f.elements.path.value||bestPath(spec); if(st.locked.length<raid.size&&raidMember(spec,path,V,st.faction,DATA.paths)){st.addCls=f.elements.cls.value;st.locked.push({spec,path});rtRedraw()}};
 }
 function rtRedraw(){renderRaid();writeHash()}
 
