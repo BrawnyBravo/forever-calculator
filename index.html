@@ -1473,6 +1473,9 @@ function rtCovers(team,V,faction){
     seen.add(b.vkey); const gs=[...new Set(team.filter((m,i)=>reach[i].has(b.vkey)).map(m=>m.group+1))].sort((a,c)=>a-c);
     out.push({kind:"buff",have:true,name:b.name+(b.reach==="party"||b.slot==="air"?` (group ${gs.join(", ")})`:"")});
   }
+  // a buff or debuff nobody here gives, though some class on this side could (28 Oct 2026, owner: warn about missing ones)
+  const canGive=b=>Object.keys(V.specs).some(sp=>{const k=V.specs[sp].cls; return DATA.paths.some(p=>p.cls===k&&p.faction===faction)&&raidProvides({cls:k,spec:sp},b,V)});
+  for(const b of RAID_BUFFS)if(!seen.has(b.vkey)&&canGive(b)){seen.add(b.vkey); out.push({kind:"buff",have:false,name:b.name})}
   return out;
 }
 /* The row's small line: what the player adds beyond the number already shown (raid.js raidWhy's own-output clause dropped); the full
@@ -1519,7 +1522,7 @@ function renderRaid(){
   const full=st.locked.length>=raid.size;
   const reach=raidReach(team,V,st.faction,"boss-long");
   const slot=({m,i})=>`<div class="rt-slot${m.locked?" locked":""}" data-i="${i}"><span class="rt-name"${m.locked?` style="color:${TEXT_COLOR[m.cls]}"`:""} title="${esc(m.why)}">${esc(m.path)}</span><span class="rt-meta"><span class="rt-spec"><i class="rt-dot" style="background:${TEXT_COLOR[m.cls]}" aria-hidden="true"></i>${esc(m.spec.replace(" ("+m.cls+")",""))}</span><span class="rt-num" title="Level-60 estimate in starter raid gear">${Math.round(raidOutput(m,reach[i],V,st.faction,"boss-long"))} ${RT_UNIT[m.role]}</span></span>${rtExtra(m.why)?`<p class="rt-why" title="${esc(m.why)}">${esc(rtExtra(m.why))}</p>`:""}<span class="rt-foot-row"><span class="rt-grp">${m.locked?`<b>Your player</b> · `:""}Group ${m.group+1}</span><span class="rt-acts">${m.locked?"":`<button class="btn small quiet rt-swap" aria-label="Replace ${esc(rtSpecName(m.spec))} (${esc(m.path)}) with the next best choice" title="Suggest someone else for this place">Replace</button>`}<button class="btn small quiet rt-lock" aria-label="${m.locked?"Remove":"Keep"} ${esc(m.spec)} ${esc(m.path)}" title="${m.locked?"Take this player out: the builder suggests someone for the place again":"I have this player: keep them in the team"}" ${!m.locked&&full?"disabled":""}>${m.locked?"Remove":"Keep"}</button></span></span></div>`;
-  const covers=rtCovers(team,V,st.faction), miss=covers.filter(x=>!x.have), buffs=covers.filter(x=>x.kind==="buff");
+  const covers=rtCovers(team,V,st.faction), miss=covers.filter(x=>!x.have&&x.kind==="cure"), buffs=covers.filter(x=>x.have&&x.kind==="buff"), noBuff=covers.filter(x=>!x.have&&x.kind==="buff");
   const avgBoss=(()=>{const s=raid.bosses.map((b,bi)=>{const r=hc?plan.perBoss[bi].result.perBoss[0]:res.perBoss[bi]; return r&&r.sec}).filter(Number.isFinite); return s.length?s.reduce((a,b)=>a+b,0)/s.length:NaN})();
   const bossRows=raid.bosses.map((b,bi)=>{const r=hc?plan.perBoss[bi].result.perBoss[0]:res.perBoss[bi]; return `<tr data-boss="${bi}"><td>${esc(b.name)}${b.est?" "+rtEst():""}</td><td>${rtMin(b.sec)}${b.targets>1?`, ${b.targets} targets`:""}, ${Math.round(b.move*100)}% moving</td><td>${r&&Number.isFinite(r.sec)?rtMin(r.sec):"no damage dealers"} ${rtEst()}</td></tr>`}).join("");
   const specsOf=k=>Object.keys(V.specs).filter(s=>V.specs[s].cls===k), pathsOf=k=>DATA.paths.filter(p=>p.cls===k&&p.faction===st.faction);
@@ -1539,7 +1542,7 @@ function renderRaid(){
         <p class="rt-counts">${["tank","heal","dps"].map(r=>`<span class="rt-count ${r}${short.includes(r)?" short":""}"><b>${c[r]}</b><span>${RT_ROLE[r]}</span></span>`).join("")}</p>
         <p class="rt-result rt-total"><span>${esc(tot[0])}</span><b>${esc(tot[1])}</b><small>${esc(tot[2])} ${rtEst()}</small></p>
       </div>
-      <div class="rt-covers" aria-label="What this team covers">${miss.length||short.length?`<span class="rt-cov miss">Missing: ${esc([...short.map(r=>`${need[r]-c[r]} ${r==="tank"?"tank":"healer"}${need[r]-c[r]>1?"s":""}`),...miss.map(x=>x.name.toLowerCase())].join(", "))}</span>`:`<span class="rt-cov have">Every cure and a battle res</span>`}${buffs.length?`<details class="rt-buffs"><summary>${buffs.length} raid buffs and debuffs</summary><ul>${buffs.map(x=>`<li>${esc(x.name)}</li>`).join("")}</ul></details>`:""}</div>
+      <div class="rt-covers" aria-label="What this team covers">${miss.length||short.length?`<span class="rt-cov miss">Missing: ${esc([...short.map(r=>`${need[r]-c[r]} ${r==="tank"?"tank":"healer"}${need[r]-c[r]>1?"s":""}`),...miss.map(x=>x.name.toLowerCase())].join(", "))}</span>`:`<span class="rt-cov have">Every cure and a battle res</span>`}${noBuff.length?`<span class="rt-cov miss rt-nobuff">No ${esc(noBuff.map(x=>x.name).join(", "))}</span>`:""}${buffs.length?`<details class="rt-buffs"><summary>${buffs.length} raid buffs and debuffs</summary><ul>${buffs.map(x=>`<li>${esc(x.name)}</li>`).join("")}</ul></details>`:""}</div>
     </div>
     ${plan.warnings.map(w=>`<p class="rt-warn warnline">${esc(rtWarn(w))}</p>`).join("")}
     <div class="rt-team">
