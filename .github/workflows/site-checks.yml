@@ -1,0 +1,86 @@
+# Automatic site-quality checks: accessibility and speed (Lighthouse, phone
+# settings) and broken links (lychee). Runs on pull requests, once a week, and
+# by hand from the Actions tab. The pages are served from the checked-out files,
+# so a pull request is tested before it goes live.
+name: Site checks
+
+on:
+  pull_request:
+  schedule:
+    - cron: "23 15 * * 1" # Mondays, 15:23 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lighthouse:
+    name: Accessibility and speed
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Settings and score limits live in lighthouserc.json.
+      - name: Run Lighthouse CI
+        run: npx --yes @lhci/cli@0.15.1 autorun
+      - name: Keep the reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports
+          path: .lighthouseci/
+          retention-days: 14
+
+  links:
+    name: Broken links
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      # Most of the page's links are written inside its scripts, where a normal
+      # HTML scan does not look. Collect them into a plain list for lychee,
+      # leaving out templates that are filled in while the page runs (they contain "$").
+      - name: Collect links from the page scripts
+        run: |
+          git ls-files '*.html' '*.js' \
+            | xargs grep -ohE 'https?://[A-Za-z0-9._~:/?#@!&+,;=%$-]+' \
+            | grep -v '[$]' \
+            | sed -E 's/[.,;:]+$//' | sort -u > "$RUNNER_TEMP/script-links.txt"
+          wc -l "$RUNNER_TEMP/script-links.txt"
+      # Settings, polite rate limits and exclusions live in lychee.toml.
+      - name: Check links
+        id: lychee
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --config lychee.toml --no-progress . ${{ runner.temp }}/script-links.txt
+          output: ${{ runner.temp }}/lychee-report.md
+          fail: false
+          jobSummary: true
+      # Weekly run only: keep ONE open issue up to date instead of opening a new one each week.
+      - name: Open or update the broken-links issue
+        if: github.event_name == 'schedule' && steps.lychee.outputs.exit_code != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPORT: ${{ runner.temp }}/lychee-report.md
+        run: |
+          gh label create broken-links --color B60205 --description "Found by the weekly link check" --force
+          existing=$(gh issue list --label broken-links --state open --json number --jq '.[0].number')
+          if [ -n "$existing" ]; then
+            gh issue edit "$existing" --body-file "$REPORT"
+            gh issue comment "$existing" --body "Still failing on the weekly check of $(date -u +%Y-%m-%d). The report above is updated."
+          else
+            gh issue create --title "Broken links found by the weekly check" --label broken-links --body-file "$REPORT"
+          fi
+      - name: Fail if links are broken
+        if: steps.lychee.outputs.exit_code != '0'
+        run: exit 1
