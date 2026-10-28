@@ -14,7 +14,7 @@ The page is two files with no build step: `index.html` and `planner-data.js`. Ke
 
 ## Automatic checks
 
-Every pull request, a weekly run and a manual run (Actions tab, "Site checks") test the page from the repository files: Lighthouse on phone settings for accessibility and speed (`lighthouserc.json`), and lychee for broken links, including the links inside the page's scripts (`lychee.toml`). Accessibility below the limit fails the check; speed and best-practice scores only warn. If the weekly link check finds a broken link, it opens or updates one issue labelled `broken-links`.
+Every pull request, a weekly run and a manual run (Actions tab, "Site checks") test the page from the repository files: Lighthouse on phone settings for accessibility and speed (`lighthouserc.json`), and lychee for broken links, including the links inside the page's scripts (`lychee.toml`). Accessibility below the limit fails the check; speed and best-practice scores only warn. On a pull request, broken links are only reported, so an outside site going down does not block a contribution. If the weekly link check finds a broken link, it opens or updates one issue labelled `broken-links`, and closes it once a weekly run finds every link working.
 
 ## Credits
 

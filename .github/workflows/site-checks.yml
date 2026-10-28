@@ -13,9 +13,11 @@ on:
 permissions:
   contents: read
 
+# A newer push to a pull request replaces its older run. Weekly and manual runs
+# are never cancelled, so one cannot be cut off half-way through writing the issue.
 concurrency:
   group: site-checks-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   lighthouse:
@@ -23,8 +25,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
       # Settings and score limits live in lighthouserc.json.
@@ -32,7 +34,7 @@ jobs:
         run: npx --yes @lhci/cli@0.15.1 autorun
       - name: Keep the reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: lighthouse-reports
           path: .lighthouseci/
@@ -46,7 +48,7 @@ jobs:
       contents: read
       issues: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       # Most of the page's links are written inside its scripts, where a normal
       # HTML scan does not look. Collect them into a plain list for lychee,
       # leaving out templates that are filled in while the page runs (they contain "$").
@@ -60,27 +62,38 @@ jobs:
       # Settings, polite rate limits and exclusions live in lychee.toml.
       - name: Check links
         id: lychee
-        uses: lycheeverse/lychee-action@v2
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
         with:
           args: --config lychee.toml --no-progress . ${{ runner.temp }}/script-links.txt
           output: ${{ runner.temp }}/lychee-report.md
           fail: false
           jobSummary: true
-      # Weekly run only: keep ONE open issue up to date instead of opening a new one each week.
-      - name: Open or update the broken-links issue
-        if: github.event_name == 'schedule' && steps.lychee.outputs.exit_code != '0'
+      # Weekly run only: keep ONE open broken-links issue up to date instead of
+      # opening a new one each week, and close it once a weekly run is clean.
+      - name: Open, update or close the broken-links issue
+        if: github.event_name == 'schedule'
         env:
           GH_TOKEN: ${{ github.token }}
+          LYCHEE_EXIT: ${{ steps.lychee.outputs.exit_code }}
           REPORT: ${{ runner.temp }}/lychee-report.md
         run: |
+          set -euo pipefail
           gh label create broken-links --color B60205 --description "Found by the weekly link check" --force
-          existing=$(gh issue list --label broken-links --state open --json number --jq '.[0].number')
+          existing=$(gh issue list --label broken-links --state open --limit 1 --json number --jq '.[0].number // empty')
+          if [ "$LYCHEE_EXIT" = "0" ]; then
+            if [ -n "$existing" ]; then
+              gh issue close "$existing" --comment "Weekly check of $(date -u +%Y-%m-%d): every link works again."
+            fi
+            exit 0
+          fi
           if [ -n "$existing" ]; then
             gh issue edit "$existing" --body-file "$REPORT"
             gh issue comment "$existing" --body "Still failing on the weekly check of $(date -u +%Y-%m-%d). The report above is updated."
           else
             gh issue create --title "Broken links found by the weekly check" --label broken-links --body-file "$REPORT"
           fi
+      # Weekly and manual runs go red on a broken link. Pull requests only report it
+      # (in the job summary above): outside sites going down should not block a contribution.
       - name: Fail if links are broken
-        if: steps.lychee.outputs.exit_code != '0'
+        if: github.event_name != 'pull_request' && steps.lychee.outputs.exit_code != '0'
         run: exit 1

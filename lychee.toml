@@ -8,10 +8,13 @@ retry_wait_time = 5
 timeout = 30
 user_agent = "Mozilla/5.0 (compatible; lychee link checker; +https://github.com/lycheeverse/lychee)"
 
-# 429 means "slow down", not "broken". 403 is what bot-blocking sites return.
+# 429 means "slow down", not "broken". 403 is accepted on purpose: it is what
+# bot-blocking sites return to link checkers. The cost is that a real 403 (a page
+# that was deleted or made private on such a site) is not reported either.
 accept = ["200..=299", "403", "429"]
 
-
+# Each entry is a regular expression matched against file paths, not a plain
+# folder name (".git" also matches e.g. "xgit"). Harmless for this small repo.
 exclude_path = [".git", ".github", ".lighthouseci", "node_modules"]
 
 exclude = [
@@ -24,6 +27,7 @@ exclude = [
   # Social sites that block or rate-limit link checkers
   '^https?://(www\.)?(twitter|x|facebook|instagram|linkedin|tiktok|reddit)\.com',
   '^https?://(www\.)?discord\.(gg|com)',
-  # The page's own live address: checked by the deploy itself, and a PR may add it before it exists
+  # The page's own live address. GitHub Pages publishes straight from the branch with no
+  # deploy step that checks it, so it is not checked anywhere; a PR may also add a link to it before it exists.
   '^https://brawnybravo\.github\.io/',
 ]
