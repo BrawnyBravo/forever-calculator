@@ -2657,13 +2657,15 @@ const plStatSrcLine=it=>[plStatLine(it),plSrcText(it)].filter(Boolean).join(" ·
 const PL_RAID_BUFFS=[["Mark of the Wild","+16 all stats"],["Battle Shout","+139 attack power"],["Blessing of Might","+133 attack power"],["Blessing of Kings","+10% all stats"],["Strength of Earth Totem","+53 Strength"],["Grace of Air Totem","+89 Agility"],["Leader of the Pack","+3% crit, melee and spell"],["Trueshot Aura","+75 ranged attack power"],["Arcane Intellect","+31 Intellect"],["Blessing of Wisdom","+40 mana per 5 s (healing estimate)"]];
 const PL_CONS_MELEE=[["Elixir of the Mongoose","+25 Agility, +2% crit"],["Juju Power","+30 Strength"],["Winterfall Firewater","+35 attack power"],["Smoked Desert Dumplings","+20 Strength"],["Dense Sharpening Stone or Weightstone","+8 weapon damage on each melee weapon (a rogue keeps the poison too; not with a Shaman's imbue or in a Druid form)"]];
 const PL_CONS_CASTER=[["Flask of Supreme Power","+150 spell damage"],["Greater Arcane Elixir","+35 spell damage"],["Runn Tum Tuber Surprise","+10 Intellect"]];
-/* Camp benefits (18 Sep 2026, owner's beta tooltip "Camp Benefits", 60 min): what each camp object gives after a minute sat at the
-   fire. Numbers are as the tooltip shows them, not scaled by level (only low-level sightings so far). Blizzard: a camp buff does not
-   stack with the matching class buff, so the Fish Bowl's 8% gives way to Blessing of Kings' 10% when raid buffs are on, the way the
-   First Aid Kit gives way to Fortitude (Fortitude is not in this model, so the kit's Stamina always counts). The Tent's rested
-   experience changes no combat number. */
-const PL_CAMP=[["Fish Bowl","+8% all stats (not with Blessing of Kings)"],["Lodestone","+20 melee attack power"],["First Aid Kit","+3 Stamina"],["Tent","rested experience, no combat effect"]];
-const PL_CAMP_STAT_PCT=8, PL_CAMP_AP=20, PL_CAMP_STA=3;
+/* Camp benefits (30 Oct 2026, Blizzard's Camping overview worldofwarcraft.blizzard.com/en-us/news/24301516, replaces the 18 Sep beta tooltip
+   "Lodestone +20 attack power, First Aid Kit +3 Stamina", which were low-level sightings). The switch is a full camp: an upgraded campfire
+   holds 5 or 10 features (a basic one 3, one per player), sat at for a minute. Ranges are level dependent; the top value is taken at 60 and
+   scaled by the same buff factor as the raid buffs below 60 (Blizzard publishes no curve). Each feature gives way to its class buff:
+   Fishing Bowl to Kings, Sharpening Wheel to Strength of Earth, Mana Well to Wisdom, Enchanted Lute to Mark of the Wild, Incense Candle to
+   Arcane Intellect. Fortitude, Divine Spirit and Moonkin Aura are not in this model, so the First Aid Kit, Faction Banner and Camp Chair
+   always count. Lute armor and resistances, the Tent's rested experience and the Reagent Bot change no number on the sheet. */
+const PL_CAMP=[["Fishing Bowl","+8% all stats (not with Blessing of Kings)"],["First Aid Kit","+56 Stamina at 60 (not with Fortitude)"],["Sharpening Wheel","+34 Strength at 60 (not with Strength of Earth)"],["Mana Well","+29 mana every 5 s at 60 (not with Blessing of Wisdom)"],["Enchanted Lute","+13 all stats, +260 armor, +22 resistances at 60 (not with Mark of the Wild)"],["Incense Candle","+25 Intellect at 60 (not with Arcane Intellect)"],["Camp Chair","+2% crit, melee and spell (not with Moonkin Aura)"],["Faction Banner","+32 Spirit at 60 (not with Divine Spirit)"],["Camp Tent","rested experience, no combat effect"]];
+const PL_CAMP_STAT_PCT=8, PL_CAMP_STA=56, PL_CAMP_STR=34, PL_CAMP_MP5=29, PL_CAMP_ALL=13, PL_CAMP_INT=25, PL_CAMP_CRIT=2, PL_CAMP_SPI=32;
 /* 30 Sep 2026 (upstream audit rows 2, 21, 22; client rows, PR #422/#429): Curse of Recklessness -505 armor (11717), Hunter's Mark +71 ranged attack power (14325, the sim's value), Curse of the Elements is the one curse, 10% on every magic school (1311680, school mask 126, Holy included); the client has no Curse of Shadow. */
 const PL_DEBUFFS=[["Sunder Armor x5","-2250 armor"],["Faerie Fire","-505 armor"],["Curse of Recklessness","-505 armor, does not stack with Faerie Fire (community armor test, 30 Sep 2026)"],["Hunter's Mark","+71 ranged attack power"],["Curse of the Elements","+10% Fire, Frost, Shadow, Arcane, Nature and Holy damage (Curse of Shadow no longer exists)"]];
 /* racial effects that change a damage number (Classic values where Forever has not said otherwise) */
@@ -2799,7 +2801,11 @@ function plStats(p){
   const camp=!!state.pl.camp;
   const pctBuffed=k=>1+(sum(k)+(on("kings")?10:camp?PL_CAMP_STAT_PCT:0))/100; // Blessing of Kings, baseline in Forever: +10% Str/Agi/Sta/Int/Spirit on top of any talent or racial percent (16 Sep 2026 audit: Kings was missing entirely); the camp Fish Bowl's 8% only without Kings (PL_CAMP)
   for(const k in add)if(k!=="crit"&&k!=="scrit")add[k]=Math.round(add[k]*sc); // buff ranks are lower before 60; a percent (Leader of the Pack, Mongoose) is not
-  if(camp){add.ap+=PL_CAMP_AP;add.sta+=PL_CAMP_STA} // camp numbers as the tooltip shows them, after the level scaling on purpose
+  if(camp){const c=v=>Math.round(v*sc); // camp features, each only without its class buff (PL_CAMP)
+    add.sta+=c(PL_CAMP_STA); add.spi+=c(PL_CAMP_SPI); add.crit+=PL_CAMP_CRIT; add.scrit+=PL_CAMP_CRIT;
+    if(!on("soe"))add.str+=c(PL_CAMP_STR);
+    if(!on("ai"))add.int+=c(PL_CAMP_INT);
+    if(!on("motw"))for(const k of ["str","agi","sta","int","spi"])add[k]+=c(PL_CAMP_ALL);}
   const str=Math.round(((b.str+(r.str||0))*sc+g[0]+add.str)*pctBuffed("strPct")), agi=Math.round(((b.agi+(r.agi||0))*sc+g[1]+add.agi)*pctBuffed("agiPct")), sta=Math.round(((b.sta+(r.sta||0))*sc+g[2]+add.sta)*pctBuffed("staPct")), int=Math.round(((b.int+(r.int||0))*sc+g[3]+add.int)*pctBuffed("intPct")), spi=Math.round(((b.spi+(r.spi||0))*sc+g[4]+add.spi)*pctBuffed("spiPct"));
   const bAp=b.ap>0?Math.round((b.ap+20)*L/60-20):b.ap, bRap=b.rap!=null?Math.round((b.rap+20)*L/60-20):null; // Classic base attack power is 2 or 3 per level minus 20
   const baseAp=bAp+(b.str+(r.str||0))*sc*b.apStr+(b.agi+(r.agi||0))*sc*b.apAgi;
@@ -2825,7 +2831,7 @@ function plStats(p){
   const S={str,agi,sta,int,spi,ap,rap,crit,scrit,hit,shit,lessDodged:g[22],spellDmg,school,schoolPct:bySchool("school"),scritSchool:bySchool("scritSchool"),shitSchool:bySchool("shitSchool"),spellCrit:bySchool("spellCrit"),
     allDmg:sum("allDmg")+(state.pl.beast?sum("beastDmg"):0),critDmg:sum("critDmg"),petPct:sum("petPct") /* Orc Command, 26 Oct 2026 */,twoHand:sum("twoHand"),oneHand:sum("oneHand"),ranged:sum("ranged"),abilCrit:sum("abilCrit"),rangedAbilCrit:sum("rangedAbilCrit"),haste:sum("haste"),feralAp:g[43],
     mh:wpn(gearW["Main hand"],"Main hand"),oh:wpn(gearW["Off hand"],"Off hand"),rng:wpn(gearW["Ranged"],"Ranged"),deb,debSchool:deb?{Fire:1,Frost:1,Shadow:1,Arcane:1,Nature:1,Holy:1}:{} /* Curse of the Elements covers Nature and Holy too (client 1311680, mask 126; 30 Sep 2026) */,targetArmor:Math.round((DPS_TARGET.armor-(on("sunder")?2250:0)-(on("armor505")?505:0) /* Faerie Fire and Curse of Recklessness -505 each (client 11717) but they do NOT stack (community armor test, 30 Sep 2026): one -505 counted, 1 Oct 2026 */)*L/60),jotc:on("jotc"),level:L,abil:L/60,target:ph.target,caster,fx,
-    cls:p.cls,mana:b.mana?Math.round((plBaseMana(p.cls,b)+int*15+g[23])*(1+sum("manaPct")/100)):0,mp5:g[12]+(on("wisdom")&&b.mana?Math.round(40*sc) /* Blessing of Wisdom 40 a 5 s (client 25290), was 33, 30 Sep 2026 */:0)+plTeamMp5(p,b),blockValue:bv,block:5+g[29]+sum("block"),healing:Math.round(g[41]+g[5]+Math.round(sum("spInt")/100*int))}; // healing power and mana for the healing estimate, block value for Shield Slam (16 Sep 2026); raid buffs include Blessing of Wisdom (33 mana per 5 s) for mana users
+    cls:p.cls,mana:b.mana?Math.round((plBaseMana(p.cls,b)+int*15+g[23])*(1+sum("manaPct")/100)):0,mp5:g[12]+(camp&&!on("wisdom")&&b.mana?Math.round(PL_CAMP_MP5*sc):0) /* camp Mana Well (PL_CAMP) */+(on("wisdom")&&b.mana?Math.round(40*sc) /* Blessing of Wisdom 40 a 5 s (client 25290), was 33, 30 Sep 2026 */:0)+plTeamMp5(p,b),blockValue:bv,block:5+g[29]+sum("block"),healing:Math.round(g[41]+g[5]+Math.round(sum("spInt")/100*int))}; // healing power and mana for the healing estimate, block value for Shield Slam (16 Sep 2026); raid buffs include Blessing of Wisdom (33 mana per 5 s) for mana users
   const schoolTxt=Object.entries(school).map(([n,v])=>`+${v} ${n}`).join(", ");
   const rows=[["Health",Math.round((b.hp*sc+sta*10+g[34])*(1+sum("hpPct")/100))],["Mana",b.mana?Math.round((plBaseMana(p.cls,b)+int*15+g[23])*(1+sum("manaPct")/100)):null],["Strength",str],["Agility",agi],["Stamina",sta],["Intellect",int],["Spirit",spi],
     ["Attack power",ap],["Ranged attack power",rap],
