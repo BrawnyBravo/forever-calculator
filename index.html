@@ -3126,7 +3126,15 @@ function plRestore(){
   // Links made before the Forever trees (no version, 15 Sep morning) held Classic talent strings: load the preset instead.
   if(!plHas(PL.phases,state.pl.phase))state.pl.phase="l60";
   state.pl.t=state.pl.ver===PL.treeVer?plLegalTalents(p.cls,plParseTalents(p.cls,state.pl.tStr||"")):plPreset(p.cls,state.pl.spec);
-  const ids=(state.pl.gearStr||"").split(","); state.pl.gear={}; PL_SLOTS.forEach(([n],i)=>{if(ids[i]&&plItem(+ids[i]))state.pl.gear[n]=+ids[i]});
+  // A shared link is untrusted: apply the same slot, class, faction and phase rules as the gear picker.
+  // Keep legal owned gear even when raid/PvP suggestion switches are off; plCandidates defines eligibility.
+  const ids=(state.pl.gearStr||"").split(","), unique=new Set(); state.pl.gear={};
+  PL_SLOTS.forEach(([n,key],i)=>{
+    const id=+ids[i]; if(!Number.isSafeInteger(id)||id<=0)return;
+    const it=plCandidates(key,p,state.pl.spec).find(it=>it.id===id);
+    if(!it||(it.u&&unique.has(id)))return;
+    state.pl.gear[n]=id; if(it.u)unique.add(id);
+  });
   const eids=(state.pl.enchStr||"").split(","); state.pl.ench={}; PL_SLOTS.forEach(([n],i)=>{if(eids[i]&&state.pl.gear[n]&&plEnchCandidates(n,plItem(state.pl.gear[n]),p).some(e=>e.id===+eids[i]))state.pl.ench[n]=+eids[i]}); delete state.pl.enchStr;
   state.plPick=null; plOneWeaponSet();
   state.pl.lock={}; state.pl.enchLock={};
